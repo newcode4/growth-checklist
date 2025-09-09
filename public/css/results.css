@@ -1,0 +1,17 @@
+.gc-container{max-width:960px;margin:40px auto;padding:0 16px;font-family:Inter,Pretendard,system-ui}
+.gc-sticky{position:sticky;top:72px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px 18px;
+  box-shadow:0 10px 24px rgba(0,0,0,.05);margin-bottom:18px}
+.gc-sticky-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.gc-sticky h1{margin:0;font-weight:800;font-size:28px}
+.gc-chip{font-weight:700;border:1px solid #e5e7eb;border-radius:999px;padding:6px 10px}
+.gc-bar{height:10px;background:#f1f5f9;border-radius:999px;overflow:hidden;margin-top:10px}
+.gc-bar>span{display:block;height:100%;background:linear-gradient(90deg,#0ea5e9,#6366f1)}
+.gc-sub{margin-top:8px;color:#334155}
+.gc-band.bad{color:#dc2626}.gc-band.mid{color:#f59e0b}.gc-band.good{color:#16a34a}
+.gc-card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px;margin:16px 0;box-shadow:0 8px 24px rgba(0,0,0,.04)}
+.gc-card h2{margin:0 0 10px;font-size:22px;font-weight:800}
+.gc-card ul{margin:.25rem 0 .75rem 1.1rem}
+.gc-form{display:grid;gap:10px;margin-top:10px}
+.gc-form input{padding:12px;border:1px solid #e5e7eb;border-radius:12px}
+.gc-btn{appearance:none;border:1px solid #111827;background:#111827;color:#fff;padding:12px 14px;border-radius:12px;font-weight:800;cursor:pointer}
+.gc-hint{font-size:12px;color:#475569;margin-top:6px}
