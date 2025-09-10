@@ -27,7 +27,7 @@ $updateChecker->getVcsApi()->enableReleaseAssets();      // 릴리즈 자산 zip
 
 
 
-define('GC3_VER','3.3');
+define('GC3_VER','3.4');
 define('GC3_DIR', plugin_dir_path(__FILE__));
 define('GC3_URL', plugin_dir_url(__FILE__));
 
