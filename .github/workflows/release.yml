@@ -1,17 +1,19 @@
-# .github/workflows/release.yml
 name: Build & Release
 on:
   push:
     tags:
-      - '*'     # 모든 태그 트리거
+      - '*'
+
+# 🔑 필수: 릴리스 생성/업로드 권한
+permissions:
+  contents: write
 
 jobs:
   build-release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        with: { fetch-depth: 0 }
 
       - name: Make zip (growth-checklist only)
         run: |
