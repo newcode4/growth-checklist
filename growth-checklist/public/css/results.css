@@ -58,3 +58,33 @@
   .gc-bottom-cta .label{ font-size:15px; }
   .gc-bottom-spacer{ height:72px; }
 }
+
+/* PC에서 상단 sticky 간격 조금 더 위로 */
+@media (min-width: 1024px){
+  .gc-sticky{ top: 24px; margin-bottom: 14px; }
+}
+
+/* 폼 버튼 가운데 정렬 + 가로폭 제어 */
+.gc-form .gc-btn{
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: clamp(240px, 60%, 420px);
+}
+
+/* 모바일에서는 풀폭 */
+@media (max-width: 768px){
+  .gc-form .gc-btn{ width: 100%; }
+}
+
+/* 2줄 입력용 텍스트영역 기본 높이 */
+.gc-form textarea{ min-height: 64px; line-height: 1.5; }
+
+/* details/summary(내 답변 요약) 스타일 */
+.gc-details{ padding: 0; overflow: hidden; }
+.gc-details > summary{
+  list-style: none; cursor: pointer; padding: 16px 20px;
+  font-weight: 800; font-size: 18px;
+}
+.gc-details[open] > summary{ border-bottom: 1px solid #e5e7eb; }
+.gc-details .gc-details-body{ padding: 14px 20px 18px; }
+.gc-details summary::-webkit-details-marker{ display:none; }

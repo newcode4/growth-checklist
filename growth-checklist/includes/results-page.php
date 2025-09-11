@@ -158,36 +158,39 @@ add_action('template_redirect', function () {
       <ul><?php foreach ($actions as $li) : ?><li><?php echo wp_kses_post($li); ?></li><?php endforeach; ?></ul>
     </section>
 
-    <section class="gc-card">
-      <h2>내 답변 요약</h2>
-      <?php if (!empty($current_form['sections'])): ?>
-        <?php foreach ($current_form['sections'] as $sec): ?>
-          <div style="margin:10px 0 14px">
-            <div style="font-weight:700;margin-bottom:6px"><?php echo esc_html($sec['title'] ?? '섹션'); ?></div>
-            <ul style="margin:.25rem 0 .75rem 1.1rem">
-              <?php foreach (($sec['items']??[]) as $it): 
-                $val = $user_answers[$it['id']] ?? null;
-                [$lab,$cls] = gc3_val_label($val);
-              ?>
-                <li>
-                  <span><?php echo esc_html($it['q']); ?></span>
-                  <span style="margin-left:8px;padding:2px 8px;border-radius:999px;border:1px solid #e5e7eb;font-size:12px" class="gc-badge <?php echo esc_attr($cls); ?>">
-                    <?php echo esc_html($lab); ?>
-                  </span>
-                </li>
-              <?php endforeach; ?>
-            </ul>
+    <details class="gc-card gc-details">
+      <summary>내 답변 요약</summary>
+      <div class="gc-details-body">
+        <?php if (!empty($current_form['sections'])): ?>
+          <?php foreach ($current_form['sections'] as $sec): ?>
+            <div style="margin:10px 0 14px">
+              <div style="font-weight:700;margin-bottom:6px">
+                <?php echo esc_html($sec['title'] ?? '섹션'); ?>
+              </div>
+              <ul style="margin:.25rem 0 .5rem 1.1rem">
+                <?php foreach (($sec['items']??[]) as $it):
+                  $val = $user_answers[$it['id']] ?? null;
+                  [$lab,$cls] = gc3_val_label($val);
+                ?>
+                  <li style="margin:4px 0">
+                    <span><?php echo esc_html($it['q']); ?></span>
+                    <span style="margin-left:8px;padding:2px 8px;border-radius:999px;border:1px solid #e5e7eb;font-size:12px" class="gc-badge <?php echo esc_attr($cls); ?>">
+                      <?php echo esc_html($lab); ?>
+                    </span>
+                  </li>
+                <?php endforeach; ?>
+              </ul>
+            </div>
+          <?php endforeach; ?>
+          <div style="font-size:13px;color:#475569">
+            보너스 항목 체크 수: <b><?php echo array_sum(array_map('intval',$user_bonus)); ?></b>
           </div>
-        <?php endforeach; ?>
+        <?php else: ?>
+          <p>폼 구조를 불러오지 못했습니다.</p>
+        <?php endif; ?>
+      </div>
+    </details>
 
-        <div style="font-size:13px;color:#475569">
-          보너스 항목 체크 수: 
-          <b><?php echo array_sum(array_map('intval',$user_bonus)); ?></b>
-        </div>
-      <?php else: ?>
-        <p>폼 구조를 불러오지 못했습니다.</p>
-      <?php endif; ?>
-    </section>
 
 
     <section class="gc-card">
@@ -248,7 +251,7 @@ add_action('template_redirect', function () {
         </select>
 
         <!-- 전체폭(가로 2칸) -->
-        <input class="span-2" type="url" name="company_url" placeholder="회사/서비스 추가 URL(선택)">
+        <textarea class="span-2" name="company_url" rows="2" placeholder="회사/서비스 추가 URL(선택)"></textarea>
 
         <select name="source" id="gc-source" required>
           <option value="">어디서 알게 되었나요? (필수)</option>
@@ -279,7 +282,7 @@ add_action('template_redirect', function () {
 
 <!-- 하단 고정 CTA 바 -->
 <div class="gc-bottom-cta" id="gc-bottom-cta">
-  <div class="label">결과 기반 맞춤 피드백이 필요하면 지금 예약해</div>
+  <div class="label">전문가 맞춤 피드백이 필요하시다면 지금 바로 신청해주세요 </div>
   <button class="cta-btn" id="gc-bottom-cta-btn">30분 무료 진단 콜 예약</button>
 </div>
 

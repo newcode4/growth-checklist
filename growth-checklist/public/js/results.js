@@ -1,4 +1,3 @@
-// public/js/results.js (교체)
 (function(){
   const btn = document.getElementById('gc-consult-btn');
   const form = document.getElementById('gc-consult');
@@ -6,11 +5,26 @@
   const srcSel = document.getElementById('gc-source');
   const srcOther = document.getElementById('gc-source-other');
 
-  // 기타 선택 시 텍스트 필드 노출
+  // 기타 선택 시 textarea 표시
   if (srcSel) {
     srcSel.addEventListener('change', () => {
       srcOther.style.display = (srcSel.value === 'other') ? 'block' : 'none';
       if (srcSel.value !== 'other') srcOther.value = '';
+    });
+  }
+
+  // 휴대폰 하이픈 자동 포맷팅
+  const phoneInput = form ? form.querySelector('input[name="phone"]') : null;
+  if (phoneInput) {
+    phoneInput.addEventListener('input', () => {
+      const d = phoneInput.value.replace(/\D/g,'').slice(0,11);
+      // 010-1234-5678 형태로만 표시
+      let out = d;
+      if (d.startsWith('010')) {
+        if (d.length > 3 && d.length <= 7) out = d.replace(/^(\d{3})(\d+)/, '$1-$2');
+        else if (d.length > 7)           out = d.replace(/^(\d{3})(\d{4})(\d{0,4}).*/, '$1-$2-$3');
+      }
+      phoneInput.value = out;
     });
   }
 
@@ -24,11 +38,11 @@
     fd.append('action','gc_consult_signup');
     fd.append('ref', GC3_RESULTS.ref);
 
-    // 010 휴대폰 검증
-    const ph = (fd.get('phone')||'').trim();
-    if(!/^010\d{8}$/.test(ph)){ alert('휴대폰은 010으로 시작하는 숫자 11자리(하이픈 없이)로 입력해 주세요.'); return; }
+    // 전화번호: 숫자만 추출해서 전송
+    const phDigits = (fd.get('phone')||'').replace(/\D/g,'');
+    if(!/^010\d{8}$/.test(phDigits)){ alert('휴대폰은 010으로 시작하는 숫자 11자리(하이픈 없이)로 입력해 주세요.'); return; }
+    fd.set('phone', phDigits); // 서버로는 숫자만
 
-    // 필수 URL/텍스트 검증
     const siteUrl = (fd.get('site_url')||'').trim();
     if(!isValidURL(siteUrl)){ alert('홈페이지 URL을 정확히 입력해 주세요. (예: https://example.com)'); return; }
 
