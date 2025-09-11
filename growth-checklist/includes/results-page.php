@@ -204,7 +204,7 @@ add_action('template_redirect', function () {
         <input type="text"  name="name"        placeholder="이름(필수)" required>
         <input type="email" name="email"       placeholder="이메일(필수)" required>
 
-        <input type="tel"   name="phone" placeholder="휴대폰(예: 01012345678)" pattern="^010\d{8}$" inputmode="numeric" maxlength="11" required>
+        <input type="tel"   name="phone" placeholder="휴대폰(예: 01012345678)" pattern="^010\d{8}$" inputmode="numeric" maxlength="13" required>
 
         <!-- 2줄 입력 -->
         <textarea name="contact_time" rows="2" placeholder="연락 가능 시간(예: 평일 09~12시)"></textarea>
@@ -251,7 +251,7 @@ add_action('template_redirect', function () {
         </select>
 
         <!-- 전체폭(가로 2칸) -->
-        <textarea class="span-2" name="company_url" rows="2" placeholder="회사/서비스 추가 URL(선택)"></textarea>
+        <textarea name="company_url" rows="2" placeholder="회사/서비스 추가 URL(선택)"></textarea>
 
         <select name="source" id="gc-source" required>
           <option value="">어디서 알게 되었나요? (필수)</option>
@@ -268,7 +268,7 @@ add_action('template_redirect', function () {
         <textarea name="source_other" id="gc-source-other" rows="2" placeholder="기타 상세(선택)" style="display:none;"></textarea>
 
         <!-- 선택: 메모 -->
-        <textarea class="span-2" name="notes" rows="3" placeholder="추가로 전하고 싶은 메모(선택)"></textarea>
+        <textarea name="notes" rows="2" placeholder="추가로 전하고 싶은 메모(선택)"></textarea>
 
         <button class="gc-btn" id="gc-consult-btn">30분 무료 진단 콜 예약</button>
         <div class="gc-hint" id="gc-hint">제출 시 계정이 생성되고 결과가 저장됩니다.</div>
@@ -282,8 +282,10 @@ add_action('template_redirect', function () {
 
 <!-- 하단 고정 CTA 바 -->
 <div class="gc-bottom-cta" id="gc-bottom-cta">
-  <div class="label">전문가 맞춤 피드백이 필요하시다면 지금 바로 신청해주세요 </div>
-  <button class="cta-btn" id="gc-bottom-cta-btn">30분 무료 진단 콜 예약</button>
+  <div class="inner">
+    <div class="label">전문가 맞춤 피드백이 필요하시다면 지금 바로 신청해주세요</div>
+    <button class="cta-btn" id="gc-bottom-cta-btn">30분 무료 진단 콜 예약</button>
+  </div>
 </div>
 
 <script>
