@@ -204,7 +204,7 @@ add_action('template_redirect', function () {
         <input type="text"  name="name"        placeholder="이름(필수)" required>
         <input type="email" name="email"       placeholder="이메일(필수)" required>
 
-        <input type="tel"   name="phone" placeholder="휴대폰(예: 01012345678)" pattern="^010\d{8}$" inputmode="numeric" maxlength="13" required>
+        <input type="tel"   name="phone" placeholder="휴대폰(예: 01012345678)"  pattern="^010(?:-?\d{4}-?\d{4})$" inputmode="numeric" maxlength="13" required>
 
         <!-- 2줄 입력 -->
         <textarea name="contact_time" rows="2" placeholder="연락 가능 시간(예: 평일 09~12시)"></textarea>

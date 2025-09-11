@@ -62,3 +62,14 @@
   .sd-title{font-size:24px}
   .sd-sticky{padding:20px 16px}
 }
+
+/* ── PC에서 전반적으로 폰트 사이즈 확대 ── */
+@media (min-width: 1024px){
+  .sd-wrap{ font-size: 17px; }                 /* 기본 글자 */
+  .sd-title{ font-size: 30px; }                /* 상단 타이틀 */
+  .sd-title.small{ font-size: 22px; }
+  .sd-crit{ font-size: 14px; }                 /* 보조 설명 */
+  .sd-opt{ font-size: 15px; padding:9px 16px;} /* 선택지 조금 더 큼 */
+  .sd-badge{ font-size:14px; padding:7px 16px;}
+  .sd-btn{ font-size:16px; padding:14px 18px; }
+}

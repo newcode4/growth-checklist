@@ -94,3 +94,13 @@
 .gc-details[open] > summary{ border-bottom: 1px solid #e5e7eb; }
 .gc-details .gc-details-body{ padding: 14px 20px 18px; }
 .gc-details summary::-webkit-details-marker{ display:none; }
+
+/* ── PC에서 전반적으로 폰트 사이즈 확대 ── */
+@media (min-width: 1024px){
+  body, .gc-container{ font-size: 17px; } /* 기본 15~16px → 17px */
+  .gc-card h2{ font-size: 24px; }         /* 카드 타이틀 */
+  .gc-card h3{ font-size: 20px; }         /* 서브 타이틀 */
+  .gc-btn{ font-size: 16px; padding:14px 18px; } /* 버튼 조금 더 큼 */
+  .gc-form input,.gc-form select,.gc-form textarea{ font-size:15px; }
+  .gc-label{ font-size:15px; }
+}

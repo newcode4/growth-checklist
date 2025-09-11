@@ -2,7 +2,7 @@
 /*
 Plugin Name: Growth Checklist 
 Description: 비즈니스 홈페이지 진단 체크리스트 + CRM
-Version: 1.2.0
+Version: 1.2.1
 Author: Berrywalk
 */
 if (!defined('ABSPATH')) exit;
@@ -27,7 +27,7 @@ $updateChecker->getVcsApi()->enableReleaseAssets();      // 릴리즈 자산 zip
 
 
 
-define('GC3_VER','3.7');
+define('GC3_VER','3.8');
 define('GC3_DIR', plugin_dir_path(__FILE__));
 define('GC3_URL', plugin_dir_url(__FILE__));
 
