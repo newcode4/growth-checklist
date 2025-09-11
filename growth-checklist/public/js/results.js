@@ -14,19 +14,44 @@
   }
 
   // 휴대폰 하이픈 자동 포맷팅
-  const phoneInput = form ? form.querySelector('input[name="phone"]') : null;
-  if (phoneInput) {
-    phoneInput.addEventListener('input', () => {
-      const d = phoneInput.value.replace(/\D/g,'').slice(0,11);
-      // 010-1234-5678 형태로만 표시
-      let out = d;
-      if (d.startsWith('010')) {
-        if (d.length > 3 && d.length <= 7) out = d.replace(/^(\d{3})(\d+)/, '$1-$2');
-        else if (d.length > 7)           out = d.replace(/^(\d{3})(\d{4})(\d{0,4}).*/, '$1-$2-$3');
-      }
-      phoneInput.value = out;
-    });
+const phoneInput = form ? form.querySelector('input[name="phone"]') : null;
+
+if (phoneInput) {
+  // 1) 하이픈 포함 표시 길이(13자)에 맞게 maxlength 보정
+  //    (이미 maxlength가 있다면 13으로 상향, 없으면 그대로)
+  if (phoneInput.maxLength > 0 && phoneInput.maxLength < 13) {
+    phoneInput.maxLength = 13;
   }
+
+  // 키패드/자동완성 힌트
+  phoneInput.setAttribute('type', 'tel');
+  phoneInput.setAttribute('inputmode', 'numeric');
+  phoneInput.setAttribute('autocomplete', 'tel');
+
+  const formatPhone = (raw) => {
+    // 숫자만 11자리까지
+    const d = raw.replace(/\D/g, '').slice(0, 11);
+    if (!d.startsWith('010')) return d;      // 정책상 010만 포맷
+    if (d.length <= 3) return d;             // 010
+    if (d.length <= 7) return d.replace(/^(\d{3})(\d+)/, '$1-$2');                 // 010-1234
+    return d.replace(/^(\d{3})(\d{4})(\d{0,4}).*/, '$1-$2-$3');                    // 010-1234-5678
+  };
+
+  // 입력 중 포맷팅
+  phoneInput.addEventListener('input', () => {
+    const formatted = formatPhone(phoneInput.value);
+    // maxlength에 막혀 값이 잘릴 수 있으므로, 항상 포맷 결과로 덮어쓰기
+    phoneInput.value = formatted;
+  });
+
+  // 붙여넣기에도 대응
+  phoneInput.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text') || '';
+    phoneInput.value = formatPhone(text);
+  });
+}
+
 
   function isValidURL(v){
     try { const u=new URL(v); return ['http:','https:'].includes(u.protocol); } catch(_){ return false; }

@@ -2,7 +2,7 @@
 /*
 Plugin Name: Growth Checklist 
 Description: 비즈니스 홈페이지 진단 체크리스트 + CRM
-Version: 1.1.9
+Version: 1.2.0
 Author: Berrywalk
 */
 if (!defined('ABSPATH')) exit;
