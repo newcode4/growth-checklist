@@ -1,4 +1,5 @@
 <?php
+// admin-crm.php (교체)
 if (!defined('ABSPATH')) exit;
 
 add_action('admin_menu', function(){
@@ -53,14 +54,14 @@ function gc3_admin_crm(){
   echo '<label>폼 <select name="form"><option value="">전체</option>';
   foreach($form_ids as $id) echo '<option '.selected($fid,$id,false).' value="'.esc_attr($id).'">'.esc_html($id).'</option>';
   echo '</select></label>';
-  echo '<label>검색 <input type="search" name="s" placeholder="이름/이메일/휴대폰" value="'.esc_attr($s).'"></label>';
+  echo '<label>검색 <input type="search" name="s" placeholder="이름/이메일/휴대폰/회사" value="'.esc_attr($s).'"></label>';
   submit_button('필터', 'secondary', '', false);
   echo wp_nonce_field('gc3_reset','_wpnonce',true,false);
   echo ' <a class="button" href="'.esc_url(admin_url('admin.php?page=gc3_crm')).'">초기화</a> ';
   echo ' <a class="button button-danger" href="'.esc_url(wp_nonce_url(admin_url('admin.php?page=gc3_crm&gc3_reset=1'),'gc3_reset')).'" onclick="return confirm(\'정말 초기화할까요?\')">통계 리셋</a>';
   echo '</form>';
 
-  // 요약
+  // 요약 카드
   echo '<div style="display:flex;gap:12px;flex-wrap:wrap">';
   $card = function($title,$value,$sub='') {
     echo '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;min-width:220px">';
@@ -74,20 +75,27 @@ function gc3_admin_crm(){
   $card('상담 신청/가입', number_format($cN), "전환율(제출→상담) <b>{$rate_consult}%</b>");
   echo '</div>';
 
-  // 상담 신청자 목록 (검색/클릭 상세)
+  // 상담 신청자 목록
   echo '<h2 style="margin-top:18px">상담 신청자</h2>';
   echo '<table class="widefat fixed striped"><thead><tr>
-          <th>시각</th><th>이름</th><th>이메일</th><th>휴대폰</th><th>연락 가능 시간</th><th>폼</th></tr></thead><tbody>';
-    foreach($consults as $row){
+          <th>시각</th><th>이름</th><th>이메일</th><th>휴대폰</th><th>회사</th><th>업종</th><th>직원수</th><th>유입</th><th>폼</th></tr></thead><tbody>';
+
+  foreach($consults as $row){
     $u = !empty($row['user']) ? get_user_by('id',$row['user']) : null;
     $name = $u ? (get_user_meta($u->ID,'first_name',true) ?: $u->display_name) : ($row['name'] ?? '');
     $email= $u ? $u->user_email : ($row['email'] ?? '');
     $phone= $u ? get_user_meta($u->ID,'phone',true) : ($row['phone'] ?? '');
-    $ct   = $row['contact_time'] ?? ($u ? get_user_meta($u->ID,'contact_time',true) : '');
     $form = $row['form'] ?? 'default';
 
+    // 신규 메타
+    $company = $u ? get_user_meta($u->ID,'company_name',true) : ($row['company_name'] ?? '');
+    $industry= $u ? get_user_meta($u->ID,'industry',true)     : ($row['industry'] ?? '');
+    $emps   = $u ? get_user_meta($u->ID,'employees',true)     : ($row['employees'] ?? '');
+    $source = $u ? get_user_meta($u->ID,'source',true)        : ($row['source'] ?? '');
+    $src_o  = $u ? get_user_meta($u->ID,'source_other',true)  : ($row['source_other'] ?? '');
+
     if($s){
-      $needle = $name.' '.$email.' '.$phone;
+      $needle = $name.' '.$email.' '.$phone.' '.$company;
       if(stripos($needle,$s)===false) continue;
     }
 
@@ -98,12 +106,15 @@ function gc3_admin_crm(){
     echo '<td><a href="'.esc_url($link).'"><b>'.esc_html($name).'</b></a></td>';
     echo '<td>'.esc_html($email).'</td>';
     echo '<td>'.esc_html($phone).'</td>';
-    echo '<td>'.esc_html($ct ?: '—').'</td>';
+    echo '<td>'.esc_html($company ?: '—').'</td>';
+    echo '<td>'.esc_html($industry ?: '—').'</td>';
+    echo '<td>'.esc_html($emps ?: '—').'</td>';
+    echo '<td>'.esc_html($source.($src_o?": $src_o":'')).'</td>';
     echo '<td>'.esc_html($form).'</td>';
     echo '</tr>';
   }
 
-  if(!$consults) echo '<tr><td colspan="6">데이터가 없습니다.</td></tr>';
+  if(!$consults) echo '<tr><td colspan="9">데이터가 없습니다.</td></tr>';
   echo '</tbody></table>';
 
   echo '</div>';

@@ -1,3 +1,4 @@
+/* public/css/results.css (교체/추가) */
 .gc-container{max-width:960px;margin:40px auto;padding:0 16px;font-family:Inter,Pretendard,system-ui}
 .gc-sticky{position:sticky;top:72px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px 18px;
   box-shadow:0 10px 24px rgba(0,0,0,.05);margin-bottom:18px}
@@ -11,7 +12,21 @@
 .gc-card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px;margin:16px 0;box-shadow:0 8px 24px rgba(0,0,0,.04)}
 .gc-card h2{margin:0 0 10px;font-size:22px;font-weight:800}
 .gc-card ul{margin:.25rem 0 .75rem 1.1rem}
-.gc-form{display:grid;gap:10px;margin-top:10px}
-.gc-form input{padding:12px;border:1px solid #e5e7eb;border-radius:12px}
+
+/* 폼 */
+.gc-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.gc-form input,.gc-form select,.gc-form textarea{
+  padding:12px;border:1px solid #e5e7eb;border-radius:12px;font-size:14px
+}
+.gc-form .gc-fieldrow{grid-column:1 / -1;display:flex;align-items:center;gap:12px;padding:8px 0}
+.gc-form .gc-label{font-weight:600;color:#334155}
+.gc-form .gc-inline{display:inline-flex;align-items:center;gap:6px}
+.gc-form .gc-btn{grid-column:1 / -1}
+
 .gc-btn{appearance:none;border:1px solid #111827;background:#111827;color:#fff;padding:12px 14px;border-radius:12px;font-weight:800;cursor:pointer}
-.gc-hint{font-size:12px;color:#475569;margin-top:6px}
+.gc-hint{font-size:12px;color:#475569;margin-top:6px;grid-column:1 / -1}
+
+/* 반응형 */
+@media (max-width: 768px){
+  .gc-form{grid-template-columns:1fr}
+}

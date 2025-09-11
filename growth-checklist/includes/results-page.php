@@ -1,4 +1,5 @@
 <?php
+// results-page.php (교체)
 if (!defined('ABSPATH')) exit;
 
 add_action('template_redirect', function () {
@@ -24,7 +25,7 @@ add_action('template_redirect', function () {
     'ref'  => $id
   ]);
 
-  // 점수대별 콘텐츠
+  // 점수대별 콘텐츠 (기존 그대로)
   $summary = '';
   $intro_paras = [];
   $problems = [];
@@ -33,7 +34,6 @@ add_action('template_redirect', function () {
   $event_paras = [];
 
   if ($score <= 15) {
-    // 0~15점: 위험 신호
     $summary = '메시지·신뢰·CTA가 분산돼 전환이 잘 안 나는 상태입니다.';
     $intro_paras = [
       '점수가 15점 이하라면, 이제 막 시작했거나 아직 셋업이 덜 된 단계일 가능성이 큽니다. 핵심이 한 화면에 정리돼 있지 않아 방문자가 무엇을 해야 할지 헷갈립니다.',
@@ -57,7 +57,6 @@ add_action('template_redirect', function () {
       '이번 <b>30분 무료 진단 콜</b>에서는 현재 상황을 빠르게 점검하고, 당장 손대면 효과가 큰 영역부터 우선순위를 정리합니다.'
     ];
   } elseif ($score <= 30) {
-    // 16~30점: 성장 정체기
     $summary = '기반은 있으나 퍼널 중간 이탈이 커서 성장 속도가 눌려 있습니다.';
     $intro_paras = [
       '16~30점이면, 기반은 갖췄지만 전환까지 이어지는 길에서 새고 있을 확률이 큽니다.',
@@ -81,7 +80,6 @@ add_action('template_redirect', function () {
       '이번 <b>30분 무료 진단 콜</b>에서 현재 병목을 함께 짚고, 바로 실행할 실험 2~3가지를 뽑아드립니다.'
     ];
   } else {
-    // 31~50점: 성장 가속화
     $summary = '기반은 준비됐고, 레버리지(보증·패키지·추천)로 성장을 당길 수 있습니다.';
     $intro_paras = [
       '30점 이상이면 궤도에 올라탄 상태입니다. 이제는 “무엇을 할까”보다 “어떻게 더 빠르고 크게 할까”가 핵심입니다.',
@@ -108,84 +106,105 @@ add_action('template_redirect', function () {
 
   get_header(); ?>
   <main class="gc-container">
-    <!-- 고정 헤더 -->
     <section class="gc-sticky">
       <div class="gc-sticky-head">
         <h1>진단 결과</h1>
         <span class="gc-chip">총점 <b><?php echo $score; ?></b>/50</span>
       </div>
-      <div class="gc-bar">
-        <span style="width:<?php echo round($score / 50 * 100); ?>%"></span>
-      </div>
+      <div class="gc-bar"><span style="width:<?php echo round($score / 50 * 100); ?>%"></span></div>
       <div class="gc-sub">상태:
-        <b class="gc-band <?php echo ($score <= 15 ? 'bad' : ($score <= 30 ? 'mid' : 'good')); ?>">
-          <?php echo esc_html($band); ?>
-        </b>
+        <b class="gc-band <?php echo ($score <= 15 ? 'bad' : ($score <= 30 ? 'mid' : 'good')); ?>"><?php echo esc_html($band); ?></b>
       </div>
     </section>
 
-    <!-- 핵심 요약 -->
     <section class="gc-card">
       <h2>핵심 요약</h2>
       <p><?php echo esc_html($band_msg); ?></p>
       <p><?php echo wp_kses_post($summary); ?></p>
     </section>
 
-    <!-- 점수대별 상세 안내 -->
     <section class="gc-card">
       <h2>점수대별 맞춤형 진단 및 제안</h2>
-      <?php foreach ($intro_paras as $p) : ?>
-        <p><?php echo wp_kses_post($p); ?></p>
-      <?php endforeach; ?>
+      <?php foreach ($intro_paras as $p) : ?><p><?php echo wp_kses_post($p); ?></p><?php endforeach; ?>
     </section>
 
-    <!-- 문제 리스트 -->
     <section class="gc-card">
       <h2>이 단계에서 자주 겪는 문제</h2>
-      <ul>
-        <?php foreach ($problems as $li) : ?>
-          <li><?php echo wp_kses_post($li); ?></li>
-        <?php endforeach; ?>
-      </ul>
+      <ul><?php foreach ($problems as $li) : ?><li><?php echo wp_kses_post($li); ?></li><?php endforeach; ?></ul>
     </section>
 
-    <!-- 즉시 효과 큰 조치 -->
     <section class="gc-card">
       <h2>지금 바로 손댈 포인트</h2>
-      <ul>
-        <?php foreach ($actions as $li) : ?>
-          <li><?php echo wp_kses_post($li); ?></li>
-        <?php endforeach; ?>
-      </ul>
+      <ul><?php foreach ($actions as $li) : ?><li><?php echo wp_kses_post($li); ?></li><?php endforeach; ?></ul>
     </section>
 
-    <!-- 예약/프로그램 섹션 -->
     <section class="gc-card">
       <h2>30분 무료 진단 콜</h2>
-      <?php foreach ($event_paras as $p) : ?>
-        <p><?php echo wp_kses_post($p); ?></p>
-      <?php endforeach; ?>
+      <?php foreach ($event_paras as $p) : ?><p><?php echo wp_kses_post($p); ?></p><?php endforeach; ?>
       <p>이번 분기 <b>주 4팀 한정</b>으로 30분 무료 진단 콜을 제공합니다. 결과를 바탕으로 바로 실행 항목을 드립니다.</p>
 
+      <!-- 🔹 확장된 상담 신청 폼 -->
       <form id="gc-consult" class="gc-form" onsubmit="return false">
         <input type="text" name="name" placeholder="이름(필수)" required>
         <input type="email" name="email" placeholder="이메일(필수)" required>
-        <!-- 010으로 시작 + 숫자 8개 = 총 11자리 -->
-        <input
-          type="tel"
-          name="phone"
-          placeholder="휴대폰(예: 01012345678)"
-          pattern="^010\d{8}$"
-          inputmode="numeric"
-          maxlength="11"
-          required
-        >
-        <input
-          type="text"
-          name="contact_time"
-          placeholder="연락 가능 시간(예: 평일 09~12시)"
-          aria-label="연락 가능 시간"
-        >
+
+        <input type="tel" name="phone" placeholder="휴대폰(예: 01012345678)" pattern="^010\d{8}$" inputmode="numeric" maxlength="11" required>
+        <input type="text" name="contact_time" placeholder="연락 가능 시간(예: 평일 09~12시)">
+
+        <input type="url" name="site_url" placeholder="홈페이지 URL(필수: https://...)" required>
+        <input type="text" name="company_name" placeholder="회사 상호(필수)" required>
+
+        <select name="industry" required>
+          <option value="">업종 선택(필수)</option>
+          <option>교육/컨설팅</option>
+          <option>IT/SaaS</option>
+          <option>전자상거래</option>
+          <option>제조/유통</option>
+          <option>부동산/건설</option>
+          <option>헬스케어/의료</option>
+          <option>미디어/콘텐츠</option>
+          <option>기타</option>
+        </select>
+
+        <select name="employees" required>
+          <option value="">직원 수(필수)</option>
+          <option value="1">1명(대표 단독)</option>
+          <option value="2-5">2–5명</option>
+          <option value="6-10">6–10명</option>
+          <option value="11-30">11–30명</option>
+          <option value="31-100">31–100명</option>
+          <option value="100+">100명+</option>
+        </select>
+
+        <div class="gc-fieldrow">
+          <span class="gc-label">공동대표 유무</span>
+          <label class="gc-inline"><input type="radio" name="cofounder" value="yes" required> 있음</label>
+          <label class="gc-inline"><input type="radio" name="cofounder" value="no" required> 없음</label>
+        </div>
+
+        <select name="company_age" required>
+          <option value="">회사 연차(필수)</option>
+          <option value="prelaunch">예비 창업/런칭 전</option>
+          <option value="<1y">1년 미만</option>
+          <option value="1-3y">1–3년</option>
+          <option value="3-5y">3–5년</option>
+          <option value="5y+">5년 이상</option>
+        </select>
+
+        <input type="url" name="company_url" placeholder="회사/서비스 추가 URL(선택)">
+
+        <select name="source" id="gc-source" required>
+          <option value="">어디서 알게 되었나요? (필수)</option>
+          <option value="naver">네이버</option>
+          <option value="google">구글</option>
+          <option value="youtube">유튜브</option>
+          <option value="instagram">인스타그램</option>
+          <option value="blog">블로그</option>
+          <option value="referral">지인 소개</option>
+          <option value="other">기타</option>
+        </select>
+        <input type="text" name="source_other" id="gc-source-other" placeholder="기타 상세(선택)" style="display:none;">
+
         <button class="gc-btn" id="gc-consult-btn">30분 무료 진단 콜 예약</button>
         <div class="gc-hint" id="gc-hint">제출 시 계정이 생성되고 결과가 저장됩니다.</div>
       </form>

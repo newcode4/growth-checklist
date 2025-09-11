@@ -38,7 +38,7 @@ add_shortcode('growth_checklist', function($atts){
       <h3 class="sd-title small">진단 결과</h3>
       <p class="sd-help">모든 문항에 응답하면 제출할 수 있습니다.</p>
       <div class="sd-cta"><button class="sd-btn" id="sd-submit">결과 제출</button></div>
-      <div class="sd-help">제출하면 결과 페이지로 이동합니다. 결과 페이지에서 원하실 경우에만 15분 무료 상담 신청을 진행합니다.</div>
+      <div class="sd-help">제출하면 결과 페이지로 이동합니다. 결과 페이지에서 원하실 경우에만 30분 무료 상담 신청을 진행합니다.</div>
     </div>
   </div>
   <?php return ob_get_clean();

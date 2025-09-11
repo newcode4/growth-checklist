@@ -5,7 +5,7 @@
 
   function bandOf(total){
     if(total<=15) return {key:'위험 단계', cls:'bad',
-      msg:'근본 원인 점검이 필요합니다. 15분 무료 컨설팅으로 핵심 병목을 즉시 짚어드립니다.',
+      msg:'근본 원인 점검이 필요합니다. 35분 무료 컨설팅으로 핵심 병목을 즉시 짚어드립니다.',
       hint:'핵심 구조 재설계'};
     if(total<=30) return {key:'성장 정체 단계', cls:'mid',
       msg:'퍼널 병목을 2주 스프린트로 교정합시다. 컨설팅에서 우선순위를 정리해드립니다.',
@@ -77,7 +77,7 @@
         <h3 class="sd-res-title">진단 결과</h3>
         <p class="sd-res-text" id="sd-result">문항을 선택하면 결과가 표시됩니다.</p>
         <div class="sd-cta">
-          <a class="sd-btn" id="sd-cta" href="#signup">15분 무료 컨설팅 예약</a>
+          <a class="sd-btn" id="sd-cta" href="#signup">35분 무료 컨설팅 예약</a>
           <button class="sd-btn secondary" id="sd-share">링크 공유</button>
           <button class="sd-btn secondary" id="sd-copy">결과 텍스트 복사</button>
         </div>
