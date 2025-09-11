@@ -272,6 +272,28 @@ add_action('template_redirect', function () {
       </form>
 
     </section>
+    <div class="gc-bottom-spacer"></div>
   </main>
+
+  <?php get_footer(); ?>
+
+<!-- 하단 고정 CTA 바 -->
+<div class="gc-bottom-cta" id="gc-bottom-cta">
+  <div class="label">결과 기반 맞춤 피드백이 필요하면 지금 예약해</div>
+  <button class="cta-btn" id="gc-bottom-cta-btn">30분 무료 진단 콜 예약</button>
+</div>
+
+<script>
+  (function(){
+    // 버튼 → 결과 페이지 내부의 예약 폼(#gc-consult)로 부드럽게 스크롤
+    var btn = document.getElementById('gc-bottom-cta-btn');
+    if(btn){
+      btn.addEventListener('click', function(){
+        var form = document.getElementById('gc-consult');
+        if(form){ form.scrollIntoView({behavior:'smooth', block:'start'}); }
+      });
+    }
+  })();
+</script>
   <?php get_footer(); exit;
 });

@@ -80,7 +80,7 @@ function gc3_admin_crm(){
   echo '<table class="widefat fixed striped"><thead><tr>
     <th>시각</th><th>이름</th><th>이메일</th><th>휴대폰</th>
     <th>회사</th><th>업종</th><th>직원수</th><th>유입</th>
-    <th>참조 결과</th><th>폼</th>
+    <th>참조 결과</th><th>폼</th><th>통계/결과</th>
   </tr></thead><tbody>';
 
   
