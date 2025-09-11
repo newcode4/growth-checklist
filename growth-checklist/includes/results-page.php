@@ -144,15 +144,18 @@ add_action('template_redirect', function () {
       <p>이번 분기 <b>주 4팀 한정</b>으로 30분 무료 진단 콜을 제공합니다. 결과를 바탕으로 바로 실행 항목을 드립니다.</p>
 
       <!-- 🔹 확장된 상담 신청 폼 -->
+      <!-- (중략)… 30분 무료 진단 콜 섹션 내부의 폼만 교체 -->
       <form id="gc-consult" class="gc-form" onsubmit="return false">
-        <input type="text" name="name" placeholder="이름(필수)" required>
-        <input type="email" name="email" placeholder="이메일(필수)" required>
+        <input type="text"  name="name"        placeholder="이름(필수)" required>
+        <input type="email" name="email"       placeholder="이메일(필수)" required>
 
-        <input type="tel" name="phone" placeholder="휴대폰(예: 01012345678)" pattern="^010\d{8}$" inputmode="numeric" maxlength="11" required>
-        <input type="text" name="contact_time" placeholder="연락 가능 시간(예: 평일 09~12시)">
+        <input type="tel"   name="phone" placeholder="휴대폰(예: 01012345678)" pattern="^010\d{8}$" inputmode="numeric" maxlength="11" required>
 
-        <input type="url" name="site_url" placeholder="홈페이지 URL(필수: https://...)" required>
-        <input type="text" name="company_name" placeholder="회사 상호(필수)" required>
+        <!-- 2줄 입력 -->
+        <textarea name="contact_time" rows="2" placeholder="연락 가능 시간(예: 평일 09~12시)"></textarea>
+
+        <input type="url"   name="site_url"     placeholder="홈페이지 URL(필수: https://…)" required>
+        <input type="text"  name="company_name" placeholder="회사 상호(필수)" required>
 
         <select name="industry" required>
           <option value="">업종 선택(필수)</option>
@@ -176,22 +179,24 @@ add_action('template_redirect', function () {
           <option value="100+">100명+</option>
         </select>
 
-        <div class="gc-fieldrow">
+        <div class="gc-fieldrow span-2">
           <span class="gc-label">공동대표 유무</span>
           <label class="gc-inline"><input type="radio" name="cofounder" value="yes" required> 있음</label>
-          <label class="gc-inline"><input type="radio" name="cofounder" value="no" required> 없음</label>
+          <label class="gc-inline"><input type="radio" name="cofounder" value="no"  required> 없음</label>
         </div>
 
+        <!-- 값은 안전한 코드, 라벨은 한국어 -->
         <select name="company_age" required>
           <option value="">회사 연차(필수)</option>
           <option value="prelaunch">예비 창업/런칭 전</option>
-          <option value="<1y">1년 미만</option>
-          <option value="1-3y">1–3년</option>
-          <option value="3-5y">3–5년</option>
-          <option value="5y+">5년 이상</option>
+          <option value="lt1y">1년 미만</option>
+          <option value="y1_3">1–3년</option>
+          <option value="y3_5">3–5년</option>
+          <option value="gte5y">5년 이상</option>
         </select>
 
-        <input type="url" name="company_url" placeholder="회사/서비스 추가 URL(선택)">
+        <!-- 전체폭(가로 2칸) -->
+        <input class="span-2" type="url" name="company_url" placeholder="회사/서비스 추가 URL(선택)">
 
         <select name="source" id="gc-source" required>
           <option value="">어디서 알게 되었나요? (필수)</option>
@@ -203,11 +208,17 @@ add_action('template_redirect', function () {
           <option value="referral">지인 소개</option>
           <option value="other">기타</option>
         </select>
-        <input type="text" name="source_other" id="gc-source-other" placeholder="기타 상세(선택)" style="display:none;">
+
+        <!-- 2줄 입력 -->
+        <textarea name="source_other" id="gc-source-other" rows="2" placeholder="기타 상세(선택)" style="display:none;"></textarea>
+
+        <!-- 선택: 메모 -->
+        <textarea class="span-2" name="notes" rows="3" placeholder="추가로 전하고 싶은 메모(선택)"></textarea>
 
         <button class="gc-btn" id="gc-consult-btn">30분 무료 진단 콜 예약</button>
         <div class="gc-hint" id="gc-hint">제출 시 계정이 생성되고 결과가 저장됩니다.</div>
       </form>
+
     </section>
   </main>
   <?php get_footer(); exit;

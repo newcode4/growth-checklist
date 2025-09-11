@@ -46,9 +46,9 @@ function gc_consult_signup(){
   $name   = sanitize_text_field($_POST['name'] ?? '');
   $email  = sanitize_email($_POST['email'] ?? '');
   $phone  = preg_replace('/\D/','', $_POST['phone'] ?? '');
-  $timepref = sanitize_text_field($_POST['contact_time'] ?? '');
+  $timepref = sanitize_textarea_field($_POST['contact_time'] ?? '');
 
-  // 비즈니스 확장 필드
+  // 확장 필드
   $site_url    = esc_url_raw($_POST['site_url'] ?? '');
   $company_nm  = sanitize_text_field($_POST['company_name'] ?? '');
   $industry    = sanitize_text_field($_POST['industry'] ?? '');
@@ -57,8 +57,9 @@ function gc_consult_signup(){
   $company_age = sanitize_text_field($_POST['company_age'] ?? '');
   $company_url = esc_url_raw($_POST['company_url'] ?? '');
   $source      = sanitize_text_field($_POST['source'] ?? '');
-  $source_other= sanitize_text_field($_POST['source_other'] ?? '');
-  $ref   = sanitize_text_field($_POST['ref'] ?? '');
+  $source_other= sanitize_textarea_field($_POST['source_other'] ?? '');
+  $notes       = sanitize_textarea_field($_POST['notes'] ?? '');
+  $ref         = sanitize_text_field($_POST['ref'] ?? '');
 
   // 필수 체크
   if(!$name||!$email||!$phone) wp_send_json_error(['msg'=>'이름/이메일/휴대폰은 필수입니다.'],400);
@@ -78,6 +79,12 @@ function gc_consult_signup(){
   if (email_exists($email)) wp_send_json_error(['msg'=>'이미 사용 중인 이메일입니다. 다른 이메일을 입력해주세요.'],409);
   $dup = get_users(['meta_key'=>'phone','meta_value'=>$phone,'number'=>1]);
   if(!empty($dup)) wp_send_json_error(['msg'=>'이미 사용 중인 휴대폰 번호입니다. 다른 번호를 입력해주세요.'],409);
+
+  // 결과 참조 데이터 가져오기(토큰 포함 URL 생성)
+  $data = get_transient("gc_v3_$ref");
+  $form = (is_array($data) && !empty($data['form'])) ? $data['form'] : 'default';
+  $token = (is_array($data) && !empty($data['token'])) ? $data['token'] : '';
+  $view_url = $token ? add_query_arg(['gc_view'=>$ref,'token'=>$token], home_url('/')) : home_url('/');
 
   // 회원 생성
   $username = sanitize_user(current(explode('@',$email)));
@@ -100,36 +107,45 @@ function gc_consult_signup(){
   if($company_url) update_user_meta($user_id,'company_url',$company_url);
   update_user_meta($user_id,'source',$source);
   if($source_other) update_user_meta($user_id,'source_other',$source_other);
+  if($notes)        update_user_meta($user_id,'notes',$notes);
 
-  // 제출 결과 끌어와 폼 ID
-  $data = get_transient("gc_v3_$ref");
-  $form = (is_array($data) && !empty($data['form'])) ? $data['form'] : 'default';
+  // 사람친화 라벨 변환
+  $age_label_map = [
+    'prelaunch' => '예비 창업/런칭 전',
+    'lt1y'      => '1년 미만',
+    'y1_3'      => '1–3년',
+    'y3_5'      => '3–5년',
+    'gte5y'     => '5년 이상',
+  ];
+  $age_label = $age_label_map[$company_age] ?? $company_age;
 
-  // 통계 저장
+  // 통계 저장(+ view_url/token 저장)
   $stat = get_option('gc3_stats',['views'=>[],'submits'=>[],'consults'=>[]]);
   $stat['consults'][] = [
     't'=>current_time('mysql'),
     'user'=>$user_id,
     'ref'=>$ref,
+    'token'=>$token,
+    'view_url'=>$view_url,
     'form'=>$form,
     'contact_time'=>$timepref,
     'name'=>$name,
     'email'=>$email,
     'phone'=>$phone,
-    // 신규 필드도 기록(요약)
     'site_url'=>$site_url,
     'company_name'=>$company_nm,
     'industry'=>$industry,
     'employees'=>$employees,
     'cofounder'=>$cofounder,
-    'company_age'=>$company_age,
+    'company_age'=>$age_label, // ← 라벨 저장
     'company_url'=>$company_url,
     'source'=>$source,
     'source_other'=>$source_other,
+    'notes'=>$notes,
   ];
   update_option('gc3_stats',$stat,false);
 
-  // 알림 메일
+  // 알림 메일(토큰 포함 참조 링크 + 라벨 사용)
   $lines = [
     "이름: {$name}",
     "이메일: {$email}",
@@ -140,12 +156,14 @@ function gc_consult_signup(){
     "업종: {$industry}",
     "직원 수: {$employees}",
     "공동대표: ".($cofounder==='yes'?'있음':'없음'),
-    "회사 연차: {$company_age}",
+    "회사 연차: {$age_label}",
     "회사/서비스 추가 URL: ".($company_url ?: '—'),
-    "유입 경로: {$source}".($source==='other'?" ({$source_other})":''),
-    "참조 결과: ".home_url("/?gc_view={$ref}"),
+    "유입 경로: {$source}".($source==='other' && $source_other ? " ({$source_other})" : ''),
+    "추가 메모: ".($notes ?: '—'),
+    "참조 결과: {$view_url}",
   ];
   wp_mail(get_option('admin_email'),'[체크리스트] 무료 진단 콜 신청', implode("\n",$lines), ['Content-Type:text/plain; charset=UTF-8']);
 
+  // 완료 후 리다이렉트(원하면 토큰 포함 링크로 Thank You에 ref를 넘길 수도 있음)
   wp_send_json_success(['redirect'=>home_url('/thank-you/')]);
 }

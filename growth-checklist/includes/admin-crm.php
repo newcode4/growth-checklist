@@ -78,7 +78,12 @@ function gc3_admin_crm(){
   // 상담 신청자 목록
   echo '<h2 style="margin-top:18px">상담 신청자</h2>';
   echo '<table class="widefat fixed striped"><thead><tr>
-          <th>시각</th><th>이름</th><th>이메일</th><th>휴대폰</th><th>회사</th><th>업종</th><th>직원수</th><th>유입</th><th>폼</th></tr></thead><tbody>';
+    <th>시각</th><th>이름</th><th>이메일</th><th>휴대폰</th>
+    <th>회사</th><th>업종</th><th>직원수</th><th>유입</th>
+    <th>참조 결과</th><th>폼</th>
+  </tr></thead><tbody>';
+
+  
 
   foreach($consults as $row){
     $u = !empty($row['user']) ? get_user_by('id',$row['user']) : null;
@@ -93,6 +98,12 @@ function gc3_admin_crm(){
     $emps   = $u ? get_user_meta($u->ID,'employees',true)     : ($row['employees'] ?? '');
     $source = $u ? get_user_meta($u->ID,'source',true)        : ($row['source'] ?? '');
     $src_o  = $u ? get_user_meta($u->ID,'source_other',true)  : ($row['source_other'] ?? '');
+
+    // (각 행 출력부에서 view_url 사용)
+    $view_url = $row['view_url'] ?? '';
+    if(!$view_url && !empty($row['ref']) && !empty($row['token'])){
+      $view_url = add_query_arg(['gc_view'=>$row['ref'],'token'=>$row['token']], home_url('/'));
+    }
 
     if($s){
       $needle = $name.' '.$email.' '.$phone.' '.$company;
@@ -111,8 +122,15 @@ function gc3_admin_crm(){
     echo '<td>'.esc_html($emps ?: '—').'</td>';
     echo '<td>'.esc_html($source.($src_o?": $src_o":'')).'</td>';
     echo '<td>'.esc_html($form).'</td>';
+    echo '<td>';
+    if($view_url){
+      echo '<a class="button button-small" target="_blank" href="'.esc_url($view_url).'">보기</a>';
+    } else {
+      echo '—';
+    }
+    echo '</td>';
     echo '</tr>';
-  }
+      }
 
   if(!$consults) echo '<tr><td colspan="9">데이터가 없습니다.</td></tr>';
   echo '</tbody></table>';

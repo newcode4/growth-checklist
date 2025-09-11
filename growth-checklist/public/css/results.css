@@ -18,10 +18,11 @@
 .gc-form input,.gc-form select,.gc-form textarea{
   padding:12px;border:1px solid #e5e7eb;border-radius:12px;font-size:14px
 }
+.gc-form textarea{min-height:64px;line-height:1.5}
+.gc-form .span-2{grid-column:1 / -1}
 .gc-form .gc-fieldrow{grid-column:1 / -1;display:flex;align-items:center;gap:12px;padding:8px 0}
 .gc-form .gc-label{font-weight:600;color:#334155}
 .gc-form .gc-inline{display:inline-flex;align-items:center;gap:6px}
-.gc-form .gc-btn{grid-column:1 / -1}
 
 .gc-btn{appearance:none;border:1px solid #111827;background:#111827;color:#fff;padding:12px 14px;border-radius:12px;font-weight:800;cursor:pointer}
 .gc-hint{font-size:12px;color:#475569;margin-top:6px;grid-column:1 / -1}
