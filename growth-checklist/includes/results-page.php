@@ -33,6 +33,25 @@ add_action('template_redirect', function () {
   $program  = '';
   $event_paras = [];
 
+  // 점수/구간 계산 직후 아래 추가
+  $form_id = is_array($data) && !empty($data['form']) ? $data['form'] : 'default';
+  $forms = get_option('gc3_forms', []);
+  $current_form_json = $forms[$form_id]['json'] ?? '';
+  $current_form = $current_form_json ? json_decode($current_form_json, true) : ['sections'=>[]];
+
+  // 사용자의 응답 복원
+  $answers_payload = json_decode($data['answers'] ?? '{}', true);
+  $user_answers = $answers_payload['answers'] ?? [];
+  $user_bonus   = $answers_payload['bonus']   ?? [];
+
+  // 값→라벨
+  function gc3_val_label($v){
+    if ($v === 3 || $v === '3') return ['예', 'good'];
+    if ($v === 1 || $v === '1') return ['부분적으로', 'mid'];
+    if ($v === 0 || $v === '0') return ['아니오', 'bad'];
+    return ['—', 'mute'];
+  }
+
   if ($score <= 15) {
     $summary = '메시지·신뢰·CTA가 분산돼 전환이 잘 안 나는 상태입니다.';
     $intro_paras = [
@@ -98,6 +117,7 @@ add_action('template_redirect', function () {
       '실행 체계화: 주간 리뷰·실험 로그로 의사결정 기준을 데이터로 고정.'
     ];
     $program = '성장 가속 프로그램(4주) — 오퍼/가격/리퍼럴 실험 설계 & 실행';
+
     $event_paras = [
       '성장의 끝은 없습니다. 다음 단계로 가는 최단 경로만 있을 뿐입니다.',
       '이번 <b>30분 무료 진단 콜</b>에서 지금 당길 수 있는 지렛대가 무엇인지 함께 정리합니다.'
@@ -137,6 +157,38 @@ add_action('template_redirect', function () {
       <h2>지금 바로 손댈 포인트</h2>
       <ul><?php foreach ($actions as $li) : ?><li><?php echo wp_kses_post($li); ?></li><?php endforeach; ?></ul>
     </section>
+
+    <section class="gc-card">
+      <h2>내 답변 요약</h2>
+      <?php if (!empty($current_form['sections'])): ?>
+        <?php foreach ($current_form['sections'] as $sec): ?>
+          <div style="margin:10px 0 14px">
+            <div style="font-weight:700;margin-bottom:6px"><?php echo esc_html($sec['title'] ?? '섹션'); ?></div>
+            <ul style="margin:.25rem 0 .75rem 1.1rem">
+              <?php foreach (($sec['items']??[]) as $it): 
+                $val = $user_answers[$it['id']] ?? null;
+                [$lab,$cls] = gc3_val_label($val);
+              ?>
+                <li>
+                  <span><?php echo esc_html($it['q']); ?></span>
+                  <span style="margin-left:8px;padding:2px 8px;border-radius:999px;border:1px solid #e5e7eb;font-size:12px" class="gc-badge <?php echo esc_attr($cls); ?>">
+                    <?php echo esc_html($lab); ?>
+                  </span>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          </div>
+        <?php endforeach; ?>
+
+        <div style="font-size:13px;color:#475569">
+          보너스 항목 체크 수: 
+          <b><?php echo array_sum(array_map('intval',$user_bonus)); ?></b>
+        </div>
+      <?php else: ?>
+        <p>폼 구조를 불러오지 못했습니다.</p>
+      <?php endif; ?>
+    </section>
+
 
     <section class="gc-card">
       <h2>30분 무료 진단 콜</h2>

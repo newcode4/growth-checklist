@@ -91,6 +91,8 @@ function gc3_admin_crm(){
     $email= $u ? $u->user_email : ($row['email'] ?? '');
     $phone= $u ? get_user_meta($u->ID,'phone',true) : ($row['phone'] ?? '');
     $form = $row['form'] ?? 'default';
+    $hash = $row['form_hash'] ?? '';
+    $report_url = admin_url('admin.php?page=gc3_reports&form='.$form.($hash ? '&hash='.$hash : ''));
 
     // 신규 메타
     $company = $u ? get_user_meta($u->ID,'company_name',true) : ($row['company_name'] ?? '');
@@ -128,6 +130,12 @@ function gc3_admin_crm(){
     } else {
       echo '—';
     }
+    echo '</td>';
+    echo '<td>';
+    if($view_url){
+      echo '<a class="button button-small" target="_blank" href="'.esc_url($view_url).'">결과</a> ';
+    }
+    echo '<a class="button button-small" href="'.esc_url($report_url).'">통계</a>';
     echo '</td>';
     echo '</tr>';
       }

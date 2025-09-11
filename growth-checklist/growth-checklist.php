@@ -2,7 +2,7 @@
 /*
 Plugin Name: Growth Checklist 
 Description: 비즈니스 홈페이지 진단 체크리스트 + CRM
-Version: 1.1.4
+Version: 1.1.5
 Author: Berrywalk
 */
 if (!defined('ABSPATH')) exit;
@@ -38,6 +38,7 @@ require_once GC3_DIR.'includes/results-page.php';
 require_once GC3_DIR.'includes/admin-crm.php';
 require_once GC3_DIR.'includes/admin-forms.php';
 require_once GC3_DIR.'includes/shortcode-mypage.php';
+require_once GC3_DIR.'includes/admin-reports.php';
 
 
 add_action('wp_enqueue_scripts', function(){
