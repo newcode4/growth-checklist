@@ -1,21 +1,10 @@
 <?php
 // includes/results-page.php
-// 결과 페이지 렌더링(/?gc_view=ID&token=TOKEN)
-
+// 제출 후 /?gc_view=ID&token=TOKEN 에서 결과 렌더
 if (!defined('ABSPATH')) exit;
 
 /**
- * 폼별 bands 에서 총점→band를 찾아주는 헬퍼 (없으면 정의)
- * forms 옵션 스키마:
- *   $forms[$form_id] = [
- *     'title' => '...',
- *     'json'  => '{...}',
- *     'bands' => [
- *       ['key'=>'위험 단계','min'=>0,'max'=>15,'page_id'=>123,'cta'=>['text'=>'...','url'=>'/']],
- *       ['key'=>'성장 정체 단계','min'=>16,'max'=>30,'page_id'=>124],
- *       ['key'=>'성장 가속 단계','min'=>31,'max'=>50,'page_id'=>125]
- *     ]
- *   ];
+ * 점수구간(bands)에서 총점→band 선택
  */
 if (!function_exists('gc3_pick_band_for_score')) {
   function gc3_pick_band_for_score($form_id, $score){
@@ -28,27 +17,23 @@ if (!function_exists('gc3_pick_band_for_score')) {
         if ($score >= $min && $score <= $max) return $b;
       }
     }
-    // 폴백(밴드 미설정 시)
+    // 폴백
     if ($score <= 15) return ['key'=>'위험 단계','min'=>0,'max'=>15];
     if ($score <= 30) return ['key'=>'성장 정체 단계','min'=>16,'max'=>30];
     return ['key'=>'성장 가속 단계','min'=>31,'max'=>50];
   }
 }
 
-/**
- * (선택) 점수대 설명문구도 원하는 경우 여기서 제어
- */
+/** 밴드별 상태 한 줄 메시지(폴백) */
 if (!function_exists('gc3_band_message')) {
   function gc3_band_message($score){
     if ($score <= 15) return '메시지·신뢰·CTA가 분산돼 전환이 잘 안 나는 상태입니다.';
     if ($score <= 30) return '기반은 있으나 퍼널 중간 이탈이 커서 성장 속도가 눌려 있습니다.';
-    return '기반은 준비됐고, 레버리지(보증·패키지·추천)로 성장을 당길 수 있습니다.';
+    return '기반은 준비됐고, 레버리지로 성장을 당길 수 있습니다.';
   }
 }
 
-/**
- * 값 → 라벨/클래스
- */
+/** 값→라벨/클래스 */
 if (!function_exists('gc3_val_label')) {
   function gc3_val_label($v){
     if ($v === 3 || $v === '3') return ['예', 'good'];
@@ -70,36 +55,49 @@ add_action('template_redirect', function () {
     wp_die('유효하지 않은 링크입니다.');
   }
 
-  // 기본 데이터
   $score   = intval($data['score'] ?? 0);
   $form_id = (is_array($data) && !empty($data['form'])) ? sanitize_title_with_dashes($data['form']) : 'default';
 
-  // 관리자에서 설정한 bands 기반 band 확정
+  // 폼/밴드 결정
   $band_info = gc3_pick_band_for_score($form_id, $score);
   $band_key  = $band_info['key'] ?? '';
   $band_msg  = gc3_band_message($score);
 
-  // 관리자에 저장된 현재 폼 구조 로드 (답변 요약용)
+  // 현재 폼 구조(내 답변 요약용)
   $forms = get_option('gc3_forms', []);
-  $current_form_json = $forms[$form_id]['json'] ?? '';
+  $form_cfg = $forms[$form_id] ?? [];
+  $current_form_json = $form_cfg['json'] ?? '';
   $current_form = $current_form_json ? json_decode($current_form_json, true) : ['sections'=>[]];
 
-  // 사용자의 응답 복원
+  // 점수대별 결과 콘텐츠(관리자 입력) 가져오기
+  $results_cfg = $form_cfg['results'][$band_key] ?? null;
+
+  // 사용자 응답 복원
   $answers_payload = json_decode($data['answers'] ?? '{}', true);
   $user_answers = $answers_payload['answers'] ?? [];
   $user_bonus   = $answers_payload['bonus']   ?? [];
 
-  // 에셋
-  if (!defined('GC3_VER')) define('GC3_VER','3.4'); // 안전망
-  if (!defined('GC3_URL'))  define('GC3_URL', plugin_dir_url(__FILE__)); // 안전망
+  // 스타일/스크립트
+  if (!defined('GC3_VER')) define('GC3_VER','3.4');
+  if (!defined('GC3_URL'))  define('GC3_URL', plugin_dir_url(__FILE__));
   wp_enqueue_style('gc3-results', GC3_URL . 'public/css/results.css', [], GC3_VER);
   wp_enqueue_script('gc3-results-js', GC3_URL . 'public/js/results.js', [], GC3_VER, true);
   wp_localize_script('gc3-results-js', 'GC3_RESULTS', [
     'ajax' => admin_url('admin-ajax.php'),
-    'ref'  => $id
+    'ref'  => $id,
   ]);
 
-  // 점수대별 고정 콘텐츠(카피) — 필요 시 자유롭게 편집 가능
+  // 하단 PC sticky CTA 리디자인(1200px 중앙/큰 폰트) 오버라이드
+  $inline_css = <<<CSS
+  .gc-bottom-cta{position:fixed;left:0;right:0;bottom:0;background:#0f172a;z-index:9999;padding:18px 0;box-shadow:0 -6px 20px rgba(2,6,23,.25)}
+  .gc-bottom-cta .inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 24px}
+  .gc-bottom-cta .label{flex:1;text-align:center;color:#fff;font-weight:700;font-size:18px;line-height:1.4}
+  .gc-bottom-cta .cta-btn{font-size:18px;font-weight:700;padding:14px 22px;border-radius:14px;background:#22c55e;color:#062}
+  @media (max-width:768px){.gc-bottom-cta .label{font-size:16px}.gc-bottom-cta .cta-btn{font-size:16px;padding:12px 18px}}
+CSS;
+  wp_add_inline_style('gc3-results', $inline_css);
+
+  // ===== 결과 데이터 세팅 =====
   $summary = '';
   $intro_paras = [];
   $problems = [];
@@ -107,78 +105,89 @@ add_action('template_redirect', function () {
   $program  = '';
   $event_paras = [];
 
-  if ($score <= 15) {
-    $summary = '메시지·신뢰·CTA가 분산돼 전환이 잘 안 나는 상태입니다.';
-    $intro_paras = [
-      '점수가 15점 이하라면, 이제 막 시작했거나 아직 셋업이 덜 된 단계일 가능성이 큽니다. 핵심이 한 화면에 정리돼 있지 않아 방문자가 무엇을 해야 할지 헷갈립니다.',
-      '간판도 가격표도 없는 가게와 비슷합니다. 지나가다 한 번 보긴 하지만, 뭘 파는지 몰라 그냥 지나치는 상황이죠. 지금은 유입보다 전환의 기반을 다지는 게 먼저입니다.'
-    ];
-    $problems = [
-      '무엇을 파는지 불명확: 핵심 가치 제안이 한 줄로 정리돼 있지 않음.',
-      '“다음에 할 일” 부재: 버튼/링크가 많아 선택지가 분산됨.',
-      '신뢰 근거 부족: 후기·수치·로고·보도 등 판단 재료가 없음.',
-      '유입 대비 전환 거의 0: 트래픽이 문의·구매로 이어지지 않음.'
-    ];
-    $actions = [
-      '첫 화면 재구성: <b>문제–약속–증거–행동(CTA)</b>를 스크롤 없이 한눈에.',
-      '신뢰 요소 상단 배치: 로고·수치·수상 등 <b>위험감소 장치</b>를 즉시 노출.',
-      '폼 간소화: 필드 <b>3개(이름/휴대폰/이메일)</b>로 진입장벽 최소화.',
-      '한 줄 가치제안: <b>20자 내외</b>로 “누구의 어떤 문제를 어떻게 해결하는지” 명확히.'
-    ];
-    $program = '응급 구조 스프린트(1주) — 랜딩 구조/카피 즉시 개선 + 빠른 실험';
-    $event_paras = [
-      '근본부터 잡지 않으면 광고비만 새어 나갑니다. 지금은 기반을 단단히 깔 때입니다.',
-      '이번 <b>30분 무료 진단 콜</b>에서는 현재 상황을 빠르게 점검하고, 당장 손대면 효과가 큰 영역부터 우선순위를 정리합니다.'
-    ];
-  } elseif ($score <= 30) {
-    $summary = '기반은 있으나 퍼널 중간 이탈이 커서 성장 속도가 눌려 있습니다.';
-    $intro_paras = [
-      '16~30점이면, 기반은 갖췄지만 전환까지 이어지는 길에서 새고 있을 확률이 큽니다.',
-      '물을 아무리 공급해도 중간에서 새는 수도관과 비슷합니다. 유입 확대보다 누수 지점을 먼저 막아야 합니다.'
-    ];
-    $problems = [
-      '유입 대비 전환 정체: 광고는 집행되지만 구매/신청 비율이 멈춰 있음.',
-      '고객 여정 가시성 부족: 어디서 이탈하는지 정확히 모름.',
-      '예산 비효율: 채널별 성과 구분이 어려워 낭비 발생.',
-      '일회성 경험: 구매/신청 이후 후속 케어가 약해 재구매·추천으로 안 이어짐.'
-    ];
-    $actions = [
-      '병목 찾기: GA4 <b>퍼널 리포트</b>로 이탈 구간 가시화.',
-      '집중 실험: 이탈 상위 1~2구간에 <b>2주</b> 집중 UI/카피 실험.',
-      '예산 최적화: 채널별 CPA·전환율 비교로 비효율 <b>20%+</b> 절감.',
-      '온보딩 자동화: 구매/신청 직후 <b>감사·다음 단계</b> 안내를 자동 발송.'
-    ];
-    $program = '병목 교정 스프린트(2주) — 퍼널 리포트 + 우선순위 3가지 실험';
-    $event_paras = [
-      '정체는 자연스럽지만, 방치하면 격차가 벌어집니다. 큰 효과가 나는 곳부터 고쳐야 합니다.',
-      '이번 <b>30분 무료 진단 콜</b>에서 현재 병목을 함께 짚고, 바로 실행할 실험 2~3가지를 뽑아드립니다.'
-    ];
+  if ($results_cfg) {
+    // 관리자 입력 우선
+    $summary     = $results_cfg['summary']     ?? '';
+    $intro_paras = $results_cfg['intro_paras'] ?? [];
+    $problems    = $results_cfg['problems']    ?? [];
+    $actions     = $results_cfg['actions']     ?? [];
+    $program     = $results_cfg['program']     ?? '';
+    $event_paras = $results_cfg['event_paras'] ?? [];
   } else {
-    $summary = '기반은 준비됐고, 레버리지(보증·패키지·추천)로 성장을 당길 수 있습니다.';
-    $intro_paras = [
-      '30점 이상이면 궤도에 올라탄 상태입니다. 이제는 “무엇을 할까”보다 “어떻게 더 빠르고 크게 할까”가 핵심입니다.',
-      '이미 쌓인 고객·신뢰·시스템에 지렛대를 얹어 확장 속도를 올릴 시점입니다.'
-    ];
-    $problems = [
-      '다음 성장의 벽: 익숙한 방식에 머물러 기회를 놓침.',
-      '객단가 정체: ARPU/객단가를 올릴 설계가 부족함.',
-      'CAC 상승: 유료 채널 의존도가 높아 비용 압박.',
-      '실행 속도 둔화: 팀 규모가 커지며 의사결정이 느려짐.'
-    ];
-    $actions = [
-      '오퍼/가격/보증 테스트: 구성·가격·보증 실험으로 <b>전환+객단가 동시 개선</b>.',
-      '리퍼럴/제휴 루프: 추천·제휴 프로그램으로 <b>CAC 구조적 절감</b>.',
-      '메시지 일치 점검: 광고–랜딩 간 <b>메시지/제안/증거</b> 완전 일치 확인.',
-      '실행 체계화: 주간 리뷰·실험 로그로 의사결정 기준을 데이터로 고정.'
-    ];
-    $program = '성장 가속 프로그램(4주) — 오퍼/가격/리퍼럴 실험 설계 & 실행';
-    $event_paras = [
-      '성장의 끝은 없습니다. 다음 단계로 가는 최단 경로만 있을 뿐입니다.',
-      '이번 <b>30분 무료 진단 콜</b>에서 지금 당길 수 있는 지렛대가 무엇인지 함께 정리합니다.'
-    ];
+    // 폴백: 기본 카피
+    if ($score <= 15) {
+      $summary = '메시지·신뢰·CTA가 분산돼 전환이 잘 안 나는 상태입니다.';
+      $intro_paras = [
+        '점수가 15점 이하라면, 이제 막 시작했거나 아직 셋업이 덜 된 단계일 가능성이 큽니다. 핵심이 한 화면에 정리돼 있지 않아 방문자가 무엇을 해야 할지 헷갈립니다.',
+        '간판도 가격표도 없는 가게와 비슷합니다. 지금은 유입보다 전환의 기반을 다지는 게 먼저입니다.'
+      ];
+      $problems = [
+        '무엇을 파는지 불명확: 핵심 가치 제안이 한 줄로 정리돼 있지 않음.',
+        '“다음에 할 일” 부재: 버튼/링크가 많아 선택지가 분산됨.',
+        '신뢰 근거 부족: 후기·수치·로고·보도 등 판단 재료가 없음.',
+        '유입 대비 전환 거의 0: 트래픽이 문의·구매로 이어지지 않음.'
+      ];
+      $actions = [
+        '첫 화면 재구성: 문제–약속–증거–행동(CTA)을 스크롤 없이 한눈에.',
+        '신뢰 요소 상단 배치: 로고·수치·수상 등 위험감소 장치를 즉시 노출.',
+        '폼 간소화: 필드 3개(이름/휴대폰/이메일)로 진입장벽 최소화.',
+        '한 줄 가치제안: 20자 내외로 “누구의 어떤 문제를 어떻게 해결” 명확히.'
+      ];
+      $program = '응급 구조 스프린트(1주) — 랜딩 구조/카피 즉시 개선 + 빠른 실험';
+      $event_paras = [
+        '근본부터 잡아야 광고비 누수가 멈춥니다.',
+        '30분 무료 진단 콜에서 우선순위를 즉시 정리합니다.'
+      ];
+    } elseif ($score <= 30) {
+      $summary = '기반은 있으나 퍼널 중간 이탈이 커서 성장 속도가 눌려 있습니다.';
+      $intro_paras = [
+        '16~30점이면 기반은 갖췄지만 전환까지의 길에서 새고 있을 확률이 큽니다.',
+        '유입 확대보다 누수 지점을 먼저 막아야 합니다.'
+      ];
+      $problems = [
+        '유입 대비 전환 정체',
+        '고객 여정 가시성 부족',
+        '예산 비효율',
+        '일회성 경험으로 재구매·추천 안 이어짐'
+      ];
+      $actions = [
+        'GA4 퍼널 리포트로 이탈 구간 가시화',
+        '이탈 상위 구간 2주 집중 실험',
+        '채널별 CPA·전환율 비교로 비효율 20%+ 절감',
+        '온보딩 자동화 구축'
+      ];
+      $program = '병목 교정 스프린트(2주) — 퍼널 리포트 + 우선순위 3가지 실험';
+      $event_paras = [
+        '정체는 방치할수록 격차가 벌어집니다.',
+        '30분 무료 진단 콜에서 바로 실행할 실험 2~3가지를 뽑아드립니다.'
+      ];
+    } else {
+      $summary = '기반은 준비됐고, 레버리지로 성장을 당길 수 있습니다.';
+      $intro_paras = [
+        '30점 이상이면 궤도에 오른 상태입니다.',
+        '메시지/오퍼/리퍼럴의 지렛대를 얹어 확장 속도를 올릴 시점입니다.'
+      ];
+      $problems = [
+        '다음 성장의 벽',
+        '객단가 정체',
+        'CAC 상승',
+        '의사결정 속도 둔화'
+      ];
+      $actions = [
+        '오퍼/가격/보증 실험으로 전환+객단가 동시 개선',
+        '리퍼럴/제휴 루프로 CAC 구조적 절감',
+        '광고–랜딩 메시지/제안/증거 일치',
+        '주간 리뷰·실험 로그로 의사결정 기준 고정'
+      ];
+      $program = '성장 가속 프로그램(4주) — 오퍼/가격/리퍼럴 실험 설계 & 실행';
+      $event_paras = [
+        '성장의 끝은 없습니다. 최단 경로만 있을 뿐.',
+        '30분 무료 진단 콜에서 즉시 당길 수 있는 지렛대를 정리합니다.'
+      ];
+    }
   }
 
-  // 페이지 렌더
+  // 렌더
   get_header(); ?>
   <main class="gc-container">
     <section class="gc-sticky">
@@ -215,8 +224,15 @@ add_action('template_redirect', function () {
       <ul><?php foreach ($actions as $li) : ?><li><?php echo wp_kses_post($li); ?></li><?php endforeach; ?></ul>
     </section>
 
+    <?php if (!empty($program)): ?>
+    <section class="gc-card">
+      <h2>프로그램</h2>
+      <p><?php echo esc_html($program); ?></p>
+    </section>
+    <?php endif; ?>
+
     <?php
-    // 🔹 "맞춤형 결과(페이지 임베드)" — bands에 page_id 지정 시
+    // bands에 page_id가 있으면 “맞춤형 결과”로 페이지 임베드
     $band_page_id = intval($band_info['page_id'] ?? 0);
     if ($band_page_id): ?>
       <section class="gc-card">
@@ -270,7 +286,6 @@ add_action('template_redirect', function () {
       <?php foreach ($event_paras as $p) : ?><p><?php echo wp_kses_post($p); ?></p><?php endforeach; ?>
       <p>이번 분기 <b>주 4팀 한정</b>으로 30분 무료 진단 콜을 제공합니다. 결과를 바탕으로 바로 실행 항목을 드립니다.</p>
 
-      <!-- 예약 폼 -->
       <form id="gc-consult" class="gc-form" onsubmit="return false">
         <input type="text"  name="name"        placeholder="이름(필수)" required>
         <input type="email" name="email"       placeholder="이메일(필수)" required>
@@ -331,7 +346,7 @@ add_action('template_redirect', function () {
 
   <?php get_footer(); ?>
 
-  <!-- 하단 고정 CTA 바 -->
+  <!-- 하단 고정 CTA -->
   <div class="gc-bottom-cta" id="gc-bottom-cta">
     <div class="inner">
       <div class="label">전문가 맞춤 피드백이 필요하시다면 지금 바로 신청해주세요</div>
@@ -351,7 +366,6 @@ add_action('template_redirect', function () {
           if(form){ form.scrollIntoView({behavior:'smooth', block:'start'}); }
         });
       }
-
       if (srcSel) {
         srcSel.addEventListener('change', function(){
           if (srcSel.value === 'other') {
@@ -365,6 +379,5 @@ add_action('template_redirect', function () {
     })();
   </script>
   <?php
-  // 🔚 이 페이지로 끝내기
   exit;
 });
