@@ -19,23 +19,31 @@ add_action('wp_ajax_nopriv_gc_submit','gc_submit');
 function gc_submit(){
   $form    = sanitize_text_field($_POST['form'] ?? 'default');
   $score   = intval($_POST['score'] ?? 0);
-  $band    = sanitize_text_field($_POST['band'] ?? '');
   $answers = wp_unslash($_POST['answers'] ?? '{}');
 
-  // 폼 버전 해시(질문이 바뀌어도 구분 가능)
+  // 폼 버전 해시
   $forms = get_option('gc3_forms', []);
   $form_json = $forms[$form]['json'] ?? '';
   $form_hash = $form_json ? md5($form_json) : '';
 
-  $id = time().wp_rand(1000,9999);
+  // 🔹 여기서 서버가 band 계산
+  $band_info = gc3_pick_band_for_score($form, $score);
+  $band_key  = $band_info['key'] ?? '';
+
+  $id    = time().wp_rand(1000,9999);
   $token = wp_generate_password(16,false,false);
 
   set_transient("gc_v3_$id", [
-    'score'=>$score,'band'=>$band,'answers'=>$answers,'token'=>$token,
-    'ts'=>current_time('mysql'),'form'=>$form,'form_hash'=>$form_hash
+    'score'=>$score,
+    'band'=>$band_key,
+    'answers'=>$answers,
+    'token'=>$token,
+    'ts'=>current_time('mysql'),
+    'form'=>$form,
+    'form_hash'=>$form_hash
   ], 60*60*24*90);
 
-  // 영구 통계(제출 스냅샷)
+  // 통계 저장
   $stat = get_option('gc3_stats', ['views'=>[],'submits'=>[],'consults'=>[]]);
   $stat['submits'][] = [
     't'=>current_time('mysql'),
@@ -43,15 +51,19 @@ function gc_submit(){
     'form'=>$form,
     'form_hash'=>$form_hash,
     'score'=>$score,
-    'band'=>$band,
-    'answers'=>$answers, // JSON 그대로 저장(질문 ID 기반)
+    'band'=>$band_key,
+    'answers'=>$answers,
   ];
   update_option('gc3_stats',$stat,false);
 
-  wp_mail(get_option('admin_email'),'[체크리스트] 새 제출', "점수: {$score}/50 ({$band})\n보기: ".home_url("/?gc_view=$id&token=$token"), ['Content-Type:text/plain; charset=UTF-8']);
+  // 메일 & 리다이렉트
+  wp_mail(get_option('admin_email'), '[체크리스트] 새 제출',
+          "점수: {$score}/50 ({$band_key})\n보기: ".home_url("/?gc_view=$id&token=$token"),
+          ['Content-Type:text/plain; charset=UTF-8']);
 
   wp_send_json_success(['redirect'=> add_query_arg(['gc_view'=>$id,'token'=>$token], home_url('/')) ]);
 }
+
 
 
 /* 결과 페이지에서 상담 신청 */

@@ -53,8 +53,22 @@ function gc3_default_forms_bootstrap(){
 }
 add_action('init','gc3_default_forms_bootstrap');
 
-function gc3_band_text($score){
-  if ($score<=15) return ['위험 단계','핵심 구조부터 재정비가 필요한 단계입니다.'];
-  if ($score<=30) return ['성장 정체 단계','여러 단계에서 성장이 막힌 상태입니다.'];
-  return ['성장 가속 단계','기반은 준비되었습니다. 가속 장치가 필요합니다.'];
+// 폼별 bands에서 총점→band 찾아주는 헬퍼
+function gc3_pick_band_for_score($form_id, $score){
+  $forms = get_option('gc3_forms', []);
+  $bands = $forms[$form_id]['bands'] ?? [];
+  if ($bands && is_array($bands)) {
+    foreach ($bands as $b) {
+      $min = intval($b['min'] ?? 0);
+      $max = intval($b['max'] ?? 9999);
+      if ($score >= $min && $score <= $max) {
+        return $b; // ['key'=>..,'min'=>..,'max'=>..,'page_id'=>..,'cta'=>...]
+      }
+    }
+  }
+  // 🔙 기존 하드코딩 로직으로 폴백 (구버전 호환)
+  if ($score<=15) return ['key'=>'위험 단계','min'=>0,'max'=>15];
+  if ($score<=30) return ['key'=>'성장 정체 단계','min'=>16,'max'=>30];
+  return ['key'=>'성장 가속 단계','min'=>31,'max'=>50];
 }
+

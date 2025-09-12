@@ -1,6 +1,62 @@
 <?php
-// results-page.php (교체)
+// includes/results-page.php
+// 결과 페이지 렌더링(/?gc_view=ID&token=TOKEN)
+
 if (!defined('ABSPATH')) exit;
+
+/**
+ * 폼별 bands 에서 총점→band를 찾아주는 헬퍼 (없으면 정의)
+ * forms 옵션 스키마:
+ *   $forms[$form_id] = [
+ *     'title' => '...',
+ *     'json'  => '{...}',
+ *     'bands' => [
+ *       ['key'=>'위험 단계','min'=>0,'max'=>15,'page_id'=>123,'cta'=>['text'=>'...','url'=>'/']],
+ *       ['key'=>'성장 정체 단계','min'=>16,'max'=>30,'page_id'=>124],
+ *       ['key'=>'성장 가속 단계','min'=>31,'max'=>50,'page_id'=>125]
+ *     ]
+ *   ];
+ */
+if (!function_exists('gc3_pick_band_for_score')) {
+  function gc3_pick_band_for_score($form_id, $score){
+    $forms = get_option('gc3_forms', []);
+    $bands = $forms[$form_id]['bands'] ?? [];
+    if ($bands && is_array($bands)) {
+      foreach ($bands as $b) {
+        $min = intval($b['min'] ?? 0);
+        $max = intval($b['max'] ?? 9999);
+        if ($score >= $min && $score <= $max) return $b;
+      }
+    }
+    // 폴백(밴드 미설정 시)
+    if ($score <= 15) return ['key'=>'위험 단계','min'=>0,'max'=>15];
+    if ($score <= 30) return ['key'=>'성장 정체 단계','min'=>16,'max'=>30];
+    return ['key'=>'성장 가속 단계','min'=>31,'max'=>50];
+  }
+}
+
+/**
+ * (선택) 점수대 설명문구도 원하는 경우 여기서 제어
+ */
+if (!function_exists('gc3_band_message')) {
+  function gc3_band_message($score){
+    if ($score <= 15) return '메시지·신뢰·CTA가 분산돼 전환이 잘 안 나는 상태입니다.';
+    if ($score <= 30) return '기반은 있으나 퍼널 중간 이탈이 커서 성장 속도가 눌려 있습니다.';
+    return '기반은 준비됐고, 레버리지(보증·패키지·추천)로 성장을 당길 수 있습니다.';
+  }
+}
+
+/**
+ * 값 → 라벨/클래스
+ */
+if (!function_exists('gc3_val_label')) {
+  function gc3_val_label($v){
+    if ($v === 3 || $v === '3') return ['예', 'good'];
+    if ($v === 1 || $v === '1') return ['부분적으로', 'mid'];
+    if ($v === 0 || $v === '0') return ['아니오', 'bad'];
+    return ['—', 'mute'];
+  }
+}
 
 add_action('template_redirect', function () {
   if (!isset($_GET['gc_view'], $_GET['token'])) return;
@@ -9,32 +65,21 @@ add_action('template_redirect', function () {
   $token = sanitize_text_field($_GET['token']);
   $data  = get_transient("gc_v3_$id");
 
-  if (!$data || !hash_equals($data['token'], $token)) {
+  if (!$data || empty($data['token']) || !hash_equals($data['token'], $token)) {
     status_header(403);
     wp_die('유효하지 않은 링크입니다.');
   }
 
-  $score = intval($data['score']);
-  [$band, $band_msg] = gc3_band_text($score);
+  // 기본 데이터
+  $score   = intval($data['score'] ?? 0);
+  $form_id = (is_array($data) && !empty($data['form'])) ? sanitize_title_with_dashes($data['form']) : 'default';
 
-  // 에셋
-  wp_enqueue_style('gc3-results', GC3_URL . 'public/css/results.css', [], GC3_VER);
-  wp_enqueue_script('gc3-results-js', GC3_URL . 'public/js/results.js', [], GC3_VER, true);
-  wp_localize_script('gc3-results-js', 'GC3_RESULTS', [
-    'ajax' => admin_url('admin-ajax.php'),
-    'ref'  => $id
-  ]);
+  // 관리자에서 설정한 bands 기반 band 확정
+  $band_info = gc3_pick_band_for_score($form_id, $score);
+  $band_key  = $band_info['key'] ?? '';
+  $band_msg  = gc3_band_message($score);
 
-  // 점수대별 콘텐츠 (기존 그대로)
-  $summary = '';
-  $intro_paras = [];
-  $problems = [];
-  $actions  = [];
-  $program  = '';
-  $event_paras = [];
-
-  // 점수/구간 계산 직후 아래 추가
-  $form_id = is_array($data) && !empty($data['form']) ? $data['form'] : 'default';
+  // 관리자에 저장된 현재 폼 구조 로드 (답변 요약용)
   $forms = get_option('gc3_forms', []);
   $current_form_json = $forms[$form_id]['json'] ?? '';
   $current_form = $current_form_json ? json_decode($current_form_json, true) : ['sections'=>[]];
@@ -44,13 +89,23 @@ add_action('template_redirect', function () {
   $user_answers = $answers_payload['answers'] ?? [];
   $user_bonus   = $answers_payload['bonus']   ?? [];
 
-  // 값→라벨
-  function gc3_val_label($v){
-    if ($v === 3 || $v === '3') return ['예', 'good'];
-    if ($v === 1 || $v === '1') return ['부분적으로', 'mid'];
-    if ($v === 0 || $v === '0') return ['아니오', 'bad'];
-    return ['—', 'mute'];
-  }
+  // 에셋
+  if (!defined('GC3_VER')) define('GC3_VER','3.4'); // 안전망
+  if (!defined('GC3_URL'))  define('GC3_URL', plugin_dir_url(__FILE__)); // 안전망
+  wp_enqueue_style('gc3-results', GC3_URL . 'public/css/results.css', [], GC3_VER);
+  wp_enqueue_script('gc3-results-js', GC3_URL . 'public/js/results.js', [], GC3_VER, true);
+  wp_localize_script('gc3-results-js', 'GC3_RESULTS', [
+    'ajax' => admin_url('admin-ajax.php'),
+    'ref'  => $id
+  ]);
+
+  // 점수대별 고정 콘텐츠(카피) — 필요 시 자유롭게 편집 가능
+  $summary = '';
+  $intro_paras = [];
+  $problems = [];
+  $actions  = [];
+  $program  = '';
+  $event_paras = [];
 
   if ($score <= 15) {
     $summary = '메시지·신뢰·CTA가 분산돼 전환이 잘 안 나는 상태입니다.';
@@ -117,13 +172,13 @@ add_action('template_redirect', function () {
       '실행 체계화: 주간 리뷰·실험 로그로 의사결정 기준을 데이터로 고정.'
     ];
     $program = '성장 가속 프로그램(4주) — 오퍼/가격/리퍼럴 실험 설계 & 실행';
-
     $event_paras = [
       '성장의 끝은 없습니다. 다음 단계로 가는 최단 경로만 있을 뿐입니다.',
       '이번 <b>30분 무료 진단 콜</b>에서 지금 당길 수 있는 지렛대가 무엇인지 함께 정리합니다.'
     ];
   }
 
+  // 페이지 렌더
   get_header(); ?>
   <main class="gc-container">
     <section class="gc-sticky">
@@ -133,7 +188,9 @@ add_action('template_redirect', function () {
       </div>
       <div class="gc-bar"><span style="width:<?php echo round($score / 50 * 100); ?>%"></span></div>
       <div class="gc-sub">상태:
-        <b class="gc-band <?php echo ($score <= 15 ? 'bad' : ($score <= 30 ? 'mid' : 'good')); ?>"><?php echo esc_html($band); ?></b>
+        <b class="gc-band <?php echo ($score <= 15 ? 'bad' : ($score <= 30 ? 'mid' : 'good')); ?>">
+          <?php echo esc_html($band_key ?: '진단'); ?>
+        </b>
       </div>
     </section>
 
@@ -157,6 +214,23 @@ add_action('template_redirect', function () {
       <h2>지금 바로 손댈 포인트</h2>
       <ul><?php foreach ($actions as $li) : ?><li><?php echo wp_kses_post($li); ?></li><?php endforeach; ?></ul>
     </section>
+
+    <?php
+    // 🔹 "맞춤형 결과(페이지 임베드)" — bands에 page_id 지정 시
+    $band_page_id = intval($band_info['page_id'] ?? 0);
+    if ($band_page_id): ?>
+      <section class="gc-card">
+        <h2>맞춤형 결과</h2>
+        <?php
+          $post = get_post($band_page_id);
+          if ($post && $post->post_status === 'publish') {
+            echo apply_filters('the_content', $post->post_content);
+          } else {
+            echo '<p>결과 페이지가 아직 준비되지 않았습니다.</p>';
+          }
+        ?>
+      </section>
+    <?php endif; ?>
 
     <details class="gc-card gc-details">
       <summary>내 답변 요약</summary>
@@ -191,47 +265,32 @@ add_action('template_redirect', function () {
       </div>
     </details>
 
-
-
     <section class="gc-card">
       <h2>30분 무료 진단 콜</h2>
       <?php foreach ($event_paras as $p) : ?><p><?php echo wp_kses_post($p); ?></p><?php endforeach; ?>
       <p>이번 분기 <b>주 4팀 한정</b>으로 30분 무료 진단 콜을 제공합니다. 결과를 바탕으로 바로 실행 항목을 드립니다.</p>
 
-      <!-- 🔹 확장된 상담 신청 폼 -->
-      <!-- (중략)… 30분 무료 진단 콜 섹션 내부의 폼만 교체 -->
+      <!-- 예약 폼 -->
       <form id="gc-consult" class="gc-form" onsubmit="return false">
         <input type="text"  name="name"        placeholder="이름(필수)" required>
         <input type="email" name="email"       placeholder="이메일(필수)" required>
-
-        <input type="tel"   name="phone" placeholder="휴대폰(예: 01012345678)"  pattern="^010(?:-?\d{4}-?\d{4})$" inputmode="numeric" maxlength="13" required>
-
-        <!-- 2줄 입력 -->
+        <input type="tel"   name="phone" placeholder="휴대폰(예: 01012345678)"  pattern="^010(?:-?\\d{4}-?\\d{4})$" inputmode="numeric" maxlength="13" required>
         <textarea name="contact_time" rows="2" placeholder="연락 가능 시간(예: 평일 09~12시)"></textarea>
-
         <input type="url"   name="site_url"     placeholder="홈페이지 URL(필수: https://…)" required>
         <input type="text"  name="company_name" placeholder="회사 상호(필수)" required>
 
         <select name="industry" required>
           <option value="">업종 선택(필수)</option>
-          <option>교육/컨설팅</option>
-          <option>IT/SaaS</option>
-          <option>전자상거래</option>
-          <option>제조/유통</option>
-          <option>부동산/건설</option>
-          <option>헬스케어/의료</option>
-          <option>미디어/콘텐츠</option>
-          <option>기타</option>
+          <option>교육/컨설팅</option><option>IT/SaaS</option><option>전자상거래</option>
+          <option>제조/유통</option><option>부동산/건설</option><option>헬스케어/의료</option>
+          <option>미디어/콘텐츠</option><option>기타</option>
         </select>
 
         <select name="employees" required>
           <option value="">직원 수(필수)</option>
-          <option value="1">1명(대표 단독)</option>
-          <option value="2-5">2–5명</option>
-          <option value="6-10">6–10명</option>
-          <option value="11-30">11–30명</option>
-          <option value="31-100">31–100명</option>
-          <option value="100+">100명+</option>
+          <option value="1">1명(대표 단독)</option><option value="2-5">2–5명</option>
+          <option value="6-10">6–10명</option><option value="11-30">11–30명</option>
+          <option value="31-100">31–100명</option><option value="100+">100명+</option>
         </select>
 
         <div class="gc-fieldrow span-2">
@@ -240,7 +299,6 @@ add_action('template_redirect', function () {
           <label class="gc-inline"><input type="radio" name="cofounder" value="no"  required> 없음</label>
         </div>
 
-        <!-- 값은 안전한 코드, 라벨은 한국어 -->
         <select name="company_age" required>
           <option value="">회사 연차(필수)</option>
           <option value="prelaunch">예비 창업/런칭 전</option>
@@ -250,55 +308,63 @@ add_action('template_redirect', function () {
           <option value="gte5y">5년 이상</option>
         </select>
 
-        <!-- 전체폭(가로 2칸) -->
         <textarea name="company_url" rows="2" placeholder="회사/서비스 추가 URL(선택)"></textarea>
 
         <select name="source" id="gc-source" required>
           <option value="">어디서 알게 되었나요? (필수)</option>
-          <option value="naver">네이버</option>
-          <option value="google">구글</option>
-          <option value="youtube">유튜브</option>
-          <option value="instagram">인스타그램</option>
-          <option value="blog">블로그</option>
-          <option value="referral">지인 소개</option>
+          <option value="naver">네이버</option><option value="google">구글</option>
+          <option value="youtube">유튜브</option><option value="instagram">인스타그램</option>
+          <option value="blog">블로그</option><option value="referral">지인 소개</option>
           <option value="other">기타</option>
         </select>
 
-        <!-- 2줄 입력 -->
         <textarea name="source_other" id="gc-source-other" rows="2" placeholder="기타 상세(선택)" style="display:none;"></textarea>
-
-        <!-- 선택: 메모 -->
         <textarea name="notes" rows="2" placeholder="추가로 전하고 싶은 메모(선택)"></textarea>
 
         <button class="gc-btn" id="gc-consult-btn">30분 무료 진단 콜 예약</button>
         <div class="gc-hint" id="gc-hint">제출 시 계정이 생성되고 결과가 저장됩니다.</div>
       </form>
-
     </section>
+
     <div class="gc-bottom-spacer"></div>
   </main>
 
   <?php get_footer(); ?>
 
-<!-- 하단 고정 CTA 바 -->
-<div class="gc-bottom-cta" id="gc-bottom-cta">
-  <div class="inner">
-    <div class="label">전문가 맞춤 피드백이 필요하시다면 지금 바로 신청해주세요</div>
-    <button class="cta-btn" id="gc-bottom-cta-btn">30분 무료 진단 콜 예약</button>
+  <!-- 하단 고정 CTA 바 -->
+  <div class="gc-bottom-cta" id="gc-bottom-cta">
+    <div class="inner">
+      <div class="label">전문가 맞춤 피드백이 필요하시다면 지금 바로 신청해주세요</div>
+      <button class="cta-btn" id="gc-bottom-cta-btn">30분 무료 진단 콜 예약</button>
+    </div>
   </div>
-</div>
 
-<script>
-  (function(){
-    // 버튼 → 결과 페이지 내부의 예약 폼(#gc-consult)로 부드럽게 스크롤
-    var btn = document.getElementById('gc-bottom-cta-btn');
-    if(btn){
-      btn.addEventListener('click', function(){
-        var form = document.getElementById('gc-consult');
-        if(form){ form.scrollIntoView({behavior:'smooth', block:'start'}); }
-      });
-    }
-  })();
-</script>
-  <?php get_footer(); exit;
+  <script>
+    (function(){
+      var btn = document.getElementById('gc-bottom-cta-btn');
+      var srcSel = document.getElementById('gc-source');
+      var srcOther = document.getElementById('gc-source-other');
+
+      if (btn) {
+        btn.addEventListener('click', function(){
+          var form = document.getElementById('gc-consult');
+          if(form){ form.scrollIntoView({behavior:'smooth', block:'start'}); }
+        });
+      }
+
+      if (srcSel) {
+        srcSel.addEventListener('change', function(){
+          if (srcSel.value === 'other') {
+            srcOther.style.display = 'block';
+          } else {
+            srcOther.style.display = 'none';
+            srcOther.value = '';
+          }
+        });
+      }
+    })();
+  </script>
+  <?php
+  // 🔚 이 페이지로 끝내기
+  exit;
 });

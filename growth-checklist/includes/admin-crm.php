@@ -126,7 +126,6 @@ echo '<table class="widefat fixed striped"><thead><tr>
   }
 
   // 폼 보기(관리자 프리뷰)
-  $preview_url = admin_url('admin-post.php?action=gc3_preview_form&form='.$form);
   $forms_manage_url = admin_url('admin.php?page=gc3_forms');
 
   echo '<tr>';
@@ -151,7 +150,6 @@ echo '<table class="widefat fixed striped"><thead><tr>
   // 폼
   echo '<td>';
   echo '<code>'.esc_html($form).'</code> ';
-  echo '<a class="button button-small" target="_blank" href="'.esc_url($preview_url).'">폼보기</a> ';
   echo '<a class="button button-small" href="'.esc_url($forms_manage_url).'">편집</a>';
   echo '</td>';
 
