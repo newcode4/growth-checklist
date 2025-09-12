@@ -30,3 +30,16 @@ function gc3_admin_forms(){
   }
   echo '</ul></form></div>';
 }
+// includes/admin-forms.php 파일 맨 아래에 추가
+add_action('admin_post_gc3_preview_form', function(){
+  if (!current_user_can('manage_options')) wp_die('권한 없음');
+  $fid = sanitize_text_field($_GET['form'] ?? 'default');
+  // 간단 프리뷰 페이지
+  echo '<!doctype html><html><head><meta charset="utf-8"><title>폼 미리보기: '.esc_html($fid).'</title>';
+  wp_head();
+  echo '</head><body style="padding:24px;max-width:980px;margin:0 auto;background:#f8fafc">';
+  echo do_shortcode('[growth_checklist id="'.esc_attr($fid).'"]');
+  wp_footer();
+  echo '</body></html>';
+  exit;
+});

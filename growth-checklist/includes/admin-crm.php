@@ -76,72 +76,102 @@ function gc3_admin_crm(){
   echo '</div>';
 
   // 상담 신청자 목록
-  echo '<h2 style="margin-top:18px">상담 신청자</h2>';
-  echo '<table class="widefat fixed striped"><thead><tr>
-    <th>시각</th><th>이름</th><th>이메일</th><th>휴대폰</th>
-    <th>회사</th><th>업종</th><th>직원수</th><th>유입</th>
-    <th>참조 결과</th><th>폼</th><th>통계/결과</th>
-  </tr></thead><tbody>';
-
+ echo '<h2 style="margin-top:18px">상담 신청자</h2>';
+echo '<table class="widefat fixed striped"><thead><tr>
+  <th>시각</th>
+  <th>이름</th>
+  <th>이메일</th>
+  <th>휴대폰</th>
+  <th>연락가능</th>
+  <th>회사</th>
+  <th>업종</th>
+  <th>직원수</th>
+  <th>유입</th>
+  <th>참조 결과</th>
+  <th>폼</th>
+  <th>자세히</th>
+</tr></thead><tbody>';
   
 
   foreach($consults as $row){
-    $u = !empty($row['user']) ? get_user_by('id',$row['user']) : null;
-    $name = $u ? (get_user_meta($u->ID,'first_name',true) ?: $u->display_name) : ($row['name'] ?? '');
-    $email= $u ? $u->user_email : ($row['email'] ?? '');
-    $phone= $u ? get_user_meta($u->ID,'phone',true) : ($row['phone'] ?? '');
-    $form = $row['form'] ?? 'default';
-    $hash = $row['form_hash'] ?? '';
-    $report_url = admin_url('admin.php?page=gc3_reports&form='.$form.($hash ? '&hash='.$hash : ''));
+  $u = !empty($row['user']) ? get_user_by('id',$row['user']) : null;
 
-    // 신규 메타
-    $company = $u ? get_user_meta($u->ID,'company_name',true) : ($row['company_name'] ?? '');
-    $industry= $u ? get_user_meta($u->ID,'industry',true)     : ($row['industry'] ?? '');
-    $emps   = $u ? get_user_meta($u->ID,'employees',true)     : ($row['employees'] ?? '');
-    $source = $u ? get_user_meta($u->ID,'source',true)        : ($row['source'] ?? '');
-    $src_o  = $u ? get_user_meta($u->ID,'source_other',true)  : ($row['source_other'] ?? '');
+  $name  = $u ? (get_user_meta($u->ID,'first_name',true) ?: $u->display_name) : ($row['name'] ?? '');
+  $email = $u ? $u->user_email : ($row['email'] ?? '');
+  $phone = $u ? get_user_meta($u->ID,'phone',true) : ($row['phone'] ?? '');
+  $ct    = $row['contact_time'] ?? ($u ? get_user_meta($u->ID,'contact_time',true) : '');
 
-    // (각 행 출력부에서 view_url 사용)
-    $view_url = $row['view_url'] ?? '';
-    if(!$view_url && !empty($row['ref']) && !empty($row['token'])){
-      $view_url = add_query_arg(['gc_view'=>$row['ref'],'token'=>$row['token']], home_url('/'));
-    }
+  $form  = $row['form'] ?? 'default';
+  $industry   = $row['industry'] ?? ($u ? get_user_meta($u->ID,'industry',true) : '');
+  $employees  = $row['employees'] ?? ($u ? get_user_meta($u->ID,'employees',true) : '');
+  $company    = $row['company_name'] ?? ($u ? get_user_meta($u->ID,'company_name',true) : '');
+  $site_url   = $row['site_url'] ?? ($u ? get_user_meta($u->ID,'site_url',true) : '');
+  $company_url= $row['company_url'] ?? ($u ? get_user_meta($u->ID,'company_url',true) : '');
+  $cofounder  = $row['cofounder'] ?? ($u ? get_user_meta($u->ID,'cofounder',true) : '');
+  $age_label  = $row['company_age'] ?? ($u ? get_user_meta($u->ID,'company_age',true) : '');
+  $source     = $row['source'] ?? ($u ? get_user_meta($u->ID,'source',true) : '');
+  $source_other = $row['source_other'] ?? ($u ? get_user_meta($u->ID,'source_other',true) : '');
+  $notes      = $row['notes'] ?? ($u ? get_user_meta($u->ID,'notes',true) : '');
 
-    if($s){
-      $needle = $name.' '.$email.' '.$phone.' '.$company;
-      if(stripos($needle,$s)===false) continue;
-    }
+  // 검색 필터 유지
+  if($s){
+    $needle = $name.' '.$email.' '.$phone.' '.$company;
+    if(stripos($needle,$s)===false) continue;
+  }
 
-    $link = $u ? admin_url('user-edit.php?user_id='.$u->ID) : '#';
+  // 결과 URL(토큰 포함)
+  $view_url = $row['view_url'] ?? '';
+  if(!$view_url && !empty($row['ref']) && !empty($row['token'])){
+    $view_url = add_query_arg(['gc_view'=>$row['ref'],'token'=>$row['token']], home_url('/'));
+  }
 
-    echo '<tr>';
-    echo '<td>'.esc_html($row['t']).'</td>';
-    echo '<td><a href="'.esc_url($link).'"><b>'.esc_html($name).'</b></a></td>';
-    echo '<td>'.esc_html($email).'</td>';
-    echo '<td>'.esc_html($phone).'</td>';
-    echo '<td>'.esc_html($company ?: '—').'</td>';
-    echo '<td>'.esc_html($industry ?: '—').'</td>';
-    echo '<td>'.esc_html($emps ?: '—').'</td>';
-    echo '<td>'.esc_html($source.($src_o?": $src_o":'')).'</td>';
-    echo '<td>'.esc_html($form).'</td>';
-    echo '<td>';
-    if($view_url){
-      echo '<a class="button button-small" target="_blank" href="'.esc_url($view_url).'">보기</a>';
-    } else {
-      echo '—';
-    }
-    echo '</td>';
-    echo '<td>';
-    if($view_url){
-      echo '<a class="button button-small" target="_blank" href="'.esc_url($view_url).'">결과</a> ';
-    }
-    echo '<a class="button button-small" href="'.esc_url($report_url).'">통계</a>';
-    echo '</td>';
-    echo '</tr>';
-      }
+  // 폼 보기(관리자 프리뷰)
+  $preview_url = admin_url('admin-post.php?action=gc3_preview_form&form='.$form);
+  $forms_manage_url = admin_url('admin.php?page=gc3_forms');
 
-  if(!$consults) echo '<tr><td colspan="9">데이터가 없습니다.</td></tr>';
-  echo '</tbody></table>';
+  echo '<tr>';
+  echo '<td>'.esc_html($row['t']).'</td>';
+  $link = $u ? admin_url('user-edit.php?user_id='.$u->ID) : '#';
+  echo '<td><a href="'.esc_url($link).'"><b>'.esc_html($name).'</b></a></td>';
+  echo '<td>'.esc_html($email).'</td>';
+  echo '<td>'.esc_html($phone).'</td>';
+  echo '<td>'.esc_html($ct ?: '—').'</td>';
+  echo '<td>'.esc_html($company ?: '—').'</td>';
+  echo '<td>'.esc_html($industry ?: '—').'</td>';
+  echo '<td>'.esc_html($employees ?: '—').'</td>';
+  echo '<td>'.esc_html($source.($source==='other'&&$source_other?": $source_other":'')).'</td>';
+
+  // 참조 결과
+  echo '<td>';
+  if($view_url){
+    echo '<a class="button button-small" target="_blank" href="'.esc_url($view_url).'">보기</a>';
+  } else { echo '—'; }
+  echo '</td>';
+
+  // 폼
+  echo '<td>';
+  echo '<code>'.esc_html($form).'</code> ';
+  echo '<a class="button button-small" target="_blank" href="'.esc_url($preview_url).'">폼보기</a> ';
+  echo '<a class="button button-small" href="'.esc_url($forms_manage_url).'">편집</a>';
+  echo '</td>';
+
+  // 자세히(접힘)
+  $detail = '';
+  $detail .= '<div><b>홈페이지 URL:</b> '.($site_url? '<a target="_blank" href="'.esc_url($site_url).'">'.esc_html($site_url).'</a>':'—').'</div>';
+  $detail .= '<div><b>회사/서비스 추가 URL:</b> '.($company_url? '<a target="_blank" href="'.esc_url($company_url).'">'.esc_html($company_url).'</a>':'—').'</div>';
+  $detail .= '<div><b>공동대표:</b> '.($cofounder==='yes'?'있음':($cofounder==='no'?'없음':'—')).'</div>';
+  $detail .= '<div><b>회사 연차:</b> '.( $age_label ?: '—').'</div>';
+  $detail .= '<div><b>메모:</b> '.( $notes ? esc_html($notes) : '—').'</div>';
+
+  echo '<td style="white-space:nowrap">';
+  echo '<details><summary>열기</summary><div style="padding:8px 0">'.$detail.'</div></details>';
+  echo '</td>';
+
+  echo '</tr>';
+}
+
+if(!$consults) echo '<tr><td colspan="12">데이터가 없습니다.</td></tr>';
+echo '</tbody></table>';
 
   echo '</div>';
 }
